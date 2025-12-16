@@ -1,0 +1,45 @@
+{
+  "owner_email": "instructor@example.com",
+  "course_name": "Introduction to Quantum Computing",
+  "content": [
+    {
+      "kernel_name": "python3",
+      "chapter_name": "Quantum Basics",
+      "file_path": "./notebooks/chapter1_basics.ipynb",
+      "sections": [
+        {
+          "section_obj": 1,
+          "section_name": "What is Quantum Computing",
+          "file_path": "./notebooks/sections/chapter1_section1.ipynb"
+        },
+        {
+          "section_obj": 2,
+          "section_name": "Qubits and Superposition",
+          "file_path": "./notebooks/sections/chapter1_section2.ipynb"
+        }
+      ]
+    },
+    {
+      "kernel_name": "python3",
+      "chapter_name": "Quantum Gates",
+      "file_path": "./notebooks/chapter2_gates.ipynb",
+      "sections": [
+        {
+          "section_obj": 1,
+          "section_name": "Single Qubit Gates",
+          "file_path": "./notebooks/sections/chapter2_section1.ipynb"
+        },
+        {
+          "section_obj": 2,
+          "section_name": "Multi Qubit Gates",
+          "file_path": "./notebooks/sections/chapter2_section2.ipynb"
+        }
+      ]
+    },
+    {
+      "kernel_name": "python3",
+      "chapter_name": "Quantum Algorithms",
+      "file_path": "./notebooks/chapter3_algorithms.ipynb"
+    }
+  ]
+}

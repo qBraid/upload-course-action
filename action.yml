@@ -1,0 +1,35 @@
+name: 'Upload to GCS'
+description: 'Upload repository contents to Google Cloud Storage bucket'
+author: 'qBraid'
+branding:
+  icon: 'upload-cloud'
+  color: 'blue'
+
+inputs:
+  api-key:
+    description: 'qBraid API key for authentication (use QBRAID_API_KEY secret)'
+    required: true
+  source-path:
+    description: 'Path to the directory or file to upload (relative to repository root)'
+    required: false
+    default: '.'
+  destination-path:
+    description: 'Destination path in the GCS bucket'
+    required: false
+    default: ''
+  exclude-patterns:
+    description: 'Comma-separated list of glob patterns to exclude from upload'
+    required: false
+    default: '.git/**,node_modules/**,.github/**'
+
+outputs:
+  upload-status:
+    description: 'Status of the upload operation'
+  files-uploaded:
+    description: 'Number of files uploaded'
+  upload-url:
+    description: 'URL of the uploaded content in GCS'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
