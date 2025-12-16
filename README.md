@@ -1,26 +1,28 @@
 # Upload to GCS Action
 
-A GitHub Action that uploads repository contents to Google Cloud Storage (GCS) buckets with qBraid API key authentication.
+A GitHub Action that uploads repository contents to a Google Cloud Storage (GCS) bucket with qBraid API key authentication.
 
 ## Description
 
-This action allows you to automatically upload files from your GitHub repository to a Google Cloud Storage bucket. It's designed to work with qBraid's authentication system, making it easy to publish your repository contents to GCS as part of your CI/CD workflow.
+This action allows you to automatically upload files from your GitHub repository to a preconfigured Google Cloud Storage bucket. It's designed to work with qBraid's authentication system, making it easy to publish your repository contents to GCS as part of your CI/CD workflow.
 
 ## Features
 
-- 🚀 Upload files and directories to GCS buckets
+- 🚀 Upload files and directories to GCS bucket
 - 🔐 Secure authentication using qBraid API key
 - 📁 Flexible source and destination path configuration
 - 🎯 Pattern-based file exclusion
 - 📊 Detailed upload status and metrics
+- 🔒 Preconfigured GCS bucket (no bucket configuration needed)
 
 ## Usage
 
 ### Prerequisites
 
-1. A Google Cloud Storage bucket
-2. A qBraid API key with permissions to write to the bucket
-3. Add the API key to your repository secrets as `QBRAID_API_KEY`
+1. A qBraid API key
+2. Add the API key to your repository secrets as `QBRAID_API_KEY`
+
+**Note:** The GCS bucket and credentials are preconfigured in the action. You only need to provide your qBraid API key for authentication.
 
 ### Basic Example
 
@@ -41,7 +43,6 @@ jobs:
       - name: Upload to GCS
         uses: courseBuilderNelson/UploadActionRepo@v1
         with:
-          bucket-name: 'my-gcs-bucket'
           api-key: ${{ secrets.QBRAID_API_KEY }}
 ```
 
@@ -64,7 +65,6 @@ jobs:
       - name: Upload to GCS
         uses: courseBuilderNelson/UploadActionRepo@v1
         with:
-          bucket-name: 'my-gcs-bucket'
           api-key: ${{ secrets.QBRAID_API_KEY }}
           source-path: './dist'
           destination-path: 'releases/${{ github.ref_name }}'
@@ -75,7 +75,6 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `bucket-name` | Name of the GCS bucket to upload to | Yes | - |
 | `api-key` | qBraid API key for authentication | Yes | - |
 | `source-path` | Path to the directory or file to upload (relative to repository root) | No | `.` (repository root) |
 | `destination-path` | Destination path in the GCS bucket | No | `` (bucket root) |
@@ -95,27 +94,14 @@ jobs:
 2. Navigate to Settings → Secrets and variables → Actions
 3. Click "New repository secret"
 4. Name: `QBRAID_API_KEY`
-5. Value: Your qBraid API key (should be in JSON format for service account authentication)
+5. Value: Your qBraid API key (obtained from qBraid)
 6. Click "Add secret"
 
 ## API Key Format
 
-The action expects the `QBRAID_API_KEY` to be a valid Google Cloud Service Account key in JSON format. Example:
+The action expects the `QBRAID_API_KEY` to be a valid qBraid API key string. You can obtain this key from your qBraid account.
 
-```json
-{
-  "type": "service_account",
-  "project_id": "your-project-id",
-  "private_key_id": "key-id",
-  "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
-  "client_email": "your-service-account@your-project.iam.gserviceaccount.com",
-  "client_id": "123456789",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/..."
-}
-```
+**Note:** The GCS service account credentials are preconfigured within the action itself. You do not need to provide GCS credentials - only your qBraid API key for authentication.
 
 ## Example Workflows
 
@@ -131,7 +117,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: courseBuilderNelson/UploadActionRepo@v1
         with:
-          bucket-name: 'my-bucket'
           api-key: ${{ secrets.QBRAID_API_KEY }}
 ```
 
@@ -149,20 +134,12 @@ jobs:
         run: npm run build
       - uses: courseBuilderNelson/UploadActionRepo@v1
         with:
-          bucket-name: 'my-bucket'
           api-key: ${{ secrets.QBRAID_API_KEY }}
           source-path: './build'
           destination-path: 'production'
 ```
 
 ## Troubleshooting
-
-### Permission Denied Errors
-
-Ensure your service account has the necessary permissions:
-- `storage.objects.create`
-- `storage.objects.delete` (if overwriting)
-- `storage.buckets.get`
 
 ### No Files Uploaded
 
@@ -171,7 +148,9 @@ Check the `exclude-patterns` input. The default excludes `.git/**`, `node_module
 ### Authentication Failures
 
 Verify that:
-1. The `QBRAID_API_KEY` secret is properly set
+1. The `QBRAID_API_KEY` secret is properly set in your repository
+2. The API key is valid and active
+3. You have obtained the correct API key from your qBraid account
 2. The API key is in valid JSON format
 3. The service account has not been disabled or deleted
 

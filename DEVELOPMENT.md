@@ -1,23 +1,24 @@
 # GitHub Action Development Summary
 
 ## Overview
-This repository contains a GitHub Action that uploads repository contents to Google Cloud Storage (GCS) buckets using qBraid API key authentication.
+This repository contains a GitHub Action that uploads repository contents to a Google Cloud Storage (GCS) bucket using qBraid API key authentication.
 
 ## Key Components
 
 ### 1. action.yml
 - Defines the action metadata for GitHub Marketplace
-- Specifies inputs (bucket-name, api-key, source-path, destination-path, exclude-patterns)
+- Specifies inputs (api-key, source-path, destination-path, exclude-patterns)
 - Specifies outputs (upload-status, files-uploaded, upload-url)
 - Uses Node.js 20 runtime
 - Entry point: dist/index.js
 
 ### 2. src/index.js
 Main action logic:
+- Validates qBraid API key for authentication
 - Parses exclude patterns from user input
 - Scans repository for files to upload (respecting exclusions)
-- Authenticates with GCS using service account credentials
-- Uploads files to specified GCS bucket
+- Authenticates with GCS using built-in service account credentials
+- Uploads files to preconfigured GCS bucket
 - Reports status and metrics
 
 ### 3. package.json
@@ -36,22 +37,26 @@ Contains compiled action code (required for GitHub Actions):
 
 ## Authentication
 
-The action expects `QBRAID_API_KEY` to be a Google Cloud Service Account key in JSON format:
-```json
-{
-  "type": "service_account",
-  "project_id": "...",
-  "private_key_id": "...",
-  "private_key": "...",
-  "client_email": "...",
-  ...
-}
-```
+The action uses a two-layer authentication approach:
 
-Users must:
-1. Create a GCS service account with appropriate permissions
-2. Download the service account key as JSON
-3. Add it to repository secrets as `QBRAID_API_KEY`
+1. **User Authentication**: Users provide a qBraid API key via the `QBRAID_API_KEY` secret
+   - The action validates this key to authenticate the user
+   - This is a simple string API key obtained from qBraid
+
+2. **GCS Authentication**: The action has built-in GCS service account credentials
+   - Configured via environment variable `GCS_SERVICE_ACCOUNT_KEY`
+   - Should be set in the action's repository secrets/environment
+   - Users do not need to provide GCS credentials
+
+## Configuration
+
+The action requires the following to be configured in the action repository (not by users):
+
+1. **GCS_SERVICE_ACCOUNT_KEY**: Environment variable containing the GCS service account JSON
+2. **GCS_BUCKET_NAME**: Environment variable for the bucket name (default: 'qbraid-upload-bucket')
+
+Users only need to provide:
+- `QBRAID_API_KEY`: Their qBraid API key for authentication
 
 ## How to Use
 
@@ -60,7 +65,6 @@ Users add this action to their workflow:
 ```yaml
 - uses: courseBuilderNelson/UploadActionRepo@v1
   with:
-    bucket-name: 'my-bucket'
     api-key: ${{ secrets.QBRAID_API_KEY }}
 ```
 

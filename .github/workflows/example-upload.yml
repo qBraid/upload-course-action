@@ -26,7 +26,6 @@ jobs:
       - name: Upload to GCS
         uses: ./  # When testing locally, use ./ ; in production use: courseBuilderNelson/UploadActionRepo@v1
         with:
-          bucket-name: 'your-bucket-name'  # Replace with your actual bucket name
           api-key: ${{ secrets.QBRAID_API_KEY }}
           source-path: '.'  # Upload entire repository (you can change to './dist' or other paths)
           destination-path: 'uploads/${{ github.sha }}'  # Optional: organize by commit SHA
