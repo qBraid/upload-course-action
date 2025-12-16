@@ -64,13 +64,11 @@ function initializeGCSClient(apiKey) {
     const credentials = JSON.parse(apiKey);
     return new Storage({ credentials });
   } catch (error) {
-    // If API key is not JSON, treat it as an authentication token
-    core.warning('API key is not in JSON format. Using as authentication token.');
-    // For simple API key authentication, we might need to use it differently
-    // depending on how qBraid has set up their GCS authentication
-    return new Storage({
-      apiKey: apiKey
-    });
+    throw new Error(
+      'QBRAID_API_KEY must be a valid service account key in JSON format. ' +
+      'Please ensure your secret contains a valid GCS service account key. ' +
+      `Parse error: ${error.message}`
+    );
   }
 }
 
@@ -96,10 +94,10 @@ async function uploadFiles(storage, bucketName, files, sourcePath, destinationPa
       // Calculate relative path from source
       const relativePath = path.relative(sourcePathResolved, filePath);
       
-      // Construct destination path in bucket
-      let destinationFile = relativePath;
+      // Construct destination path in bucket (using posix for cloud storage)
+      let destinationFile = relativePath.replace(/\\/g, '/');
       if (destinationPath) {
-        destinationFile = path.join(destinationPath, relativePath).replace(/\\/g, '/');
+        destinationFile = path.posix.join(destinationPath, relativePath.replace(/\\/g, '/'));
       }
 
       core.info(`Uploading: ${relativePath} -> ${destinationFile}`);
@@ -169,7 +167,9 @@ async function run() {
     core.setOutput('upload-status', 'success');
     core.setOutput('files-uploaded', uploadedCount.toString());
     
-    const uploadUrl = `https://storage.googleapis.com/${bucketName}/${destinationPath}`;
+    // Construct upload URL (handle empty destination path)
+    const baseUrl = `https://storage.googleapis.com/${bucketName}`;
+    const uploadUrl = destinationPath ? `${baseUrl}/${destinationPath}` : baseUrl;
     core.setOutput('upload-url', uploadUrl);
 
     core.info(`✅ Successfully uploaded ${uploadedCount} files to GCS bucket: ${bucketName}`);
