@@ -1,107 +1,54 @@
-# GitHub Action Development Summary
+# Development Guide
 
 ## Overview
-This repository contains a GitHub Action that uploads repository contents to a Google Cloud Storage (GCS) bucket using qBraid API key authentication.
+This repository contains a Composite GitHub Action that validates and uploads course content to qBraid using Python scripts.
 
 ## Key Components
 
 ### 1. action.yml
-- Defines the action metadata for GitHub Marketplace
-- Specifies inputs (api-key, source-path, destination-path, exclude-patterns)
-- Specifies outputs (upload-status, files-uploaded, upload-url)
-- Uses Node.js 20 runtime
-- Entry point: dist/index.js
+- Defines the composite action metadata.
+- Specifies inputs (`api-key`, `course-json-path`, etc.).
+- Orchestrates the execution of Python scripts in `src/scripts/`.
 
-### 2. src/index.js
-Main action logic:
-- Validates qBraid API key for authentication
-- Parses exclude patterns from user input
-- Scans repository for files to upload (respecting exclusions)
-- Authenticates with GCS using built-in service account credentials
-- Uploads files to preconfigured GCS bucket
-- Reports status and metrics
+### 2. src/scripts/
+Contains the core logic in Python:
+- `validate_api_key.py`: Verifies the qBraid API key.
+- `validate_course.py`: Validates `course.json` structure.
+- `verify_notebooks.py`: Checks existence of notebook files.
+- `check_images.py`: Validates image references in notebooks.
+- `upload_files.py`: Handles file scanning and upload via Signed URLs.
+- `create_course.py`: Calls qBraid API to create the course.
+- `poll_worker.py`: Polls for course processing completion.
 
-### 3. package.json
-Dependencies:
-- @actions/core: GitHub Actions SDK for inputs/outputs/logging
-- @google-cloud/storage: Official GCS client library
-- glob: File pattern matching
-- @vercel/ncc: Bundles code into single dist/index.js
-
-### 4. dist/
-Contains compiled action code (required for GitHub Actions):
-- index.js: Bundled action code with all dependencies
-- index.js.map: Source map for debugging
-- licenses.txt: Third-party license information
-- sourcemap-register.js: Source map support
+### 3. requirements.txt
+Python dependencies required by the scripts:
+- `requests`
+- `nbformat`
 
 ## Authentication
 
-The action uses a two-layer authentication approach:
+The action uses a **Signed URL** approach for secure uploads:
 
-1. **User Authentication**: Users provide a qBraid API key via the `QBRAID_API_KEY` secret
-   - The action validates this key to authenticate the user
-   - This is a simple string API key obtained from qBraid
+1.  **User Authentication**: Users provide a qBraid API key via the `api-key` input.
+2.  **Upload Authorization**: The action requests upload URLs from the qBraid API using the user's API key.
+3.  **Direct Upload**: Files are uploaded directly to Google Cloud Storage using the pre-signed URLs returned by the API.
 
-2. **GCS Authentication**: The action has built-in GCS service account credentials
-   - Configured via environment variable `GCS_SERVICE_ACCOUNT_KEY`
-   - Should be set in the action's repository secrets/environment
-   - Users do not need to provide GCS credentials
+**Note:** No GCS Service Account Keys are stored or used within this action.
 
-## Configuration
+## Development Workflow
 
-The action requires the following to be configured in the action repository (not by users):
-
-1. **GCS_SERVICE_ACCOUNT_KEY**: Environment variable containing the GCS service account JSON
-2. **GCS_BUCKET_NAME**: Environment variable for the bucket name (default: 'qbraid-upload-bucket')
-
-Users only need to provide:
-- `QBRAID_API_KEY`: Their qBraid API key for authentication
-
-## How to Use
-
-Users add this action to their workflow:
-
-```yaml
-- uses: courseBuilderNelson/UploadActionRepo@v1
-  with:
-    api-key: ${{ secrets.QBRAID_API_KEY }}
-```
-
-## Build Process
-
-1. Source code in `src/index.js`
-2. Run `npm run build` to compile with @vercel/ncc
-3. Outputs bundled code to `dist/index.js`
-4. Commit dist/ folder (required by GitHub Actions)
-
-## Publishing to Marketplace
-
-To publish:
-1. Create a release on GitHub (e.g., v1.0.0)
-2. Tag the release (e.g., v1)
-3. Mark as "Publish this Action to the GitHub Marketplace"
-4. GitHub will automatically list it for users to discover
+1.  **Modify Scripts**: Edit the Python scripts in `src/scripts/`.
+2.  **Test Locally**: You can run the scripts locally if you have a valid `course.json` and API key.
+    ```bash
+    # Example: Validate API Key
+    python src/scripts/validate_api_key.py "YOUR_API_KEY"
+    ```
+3.  **Update Action**: If you change inputs/outputs, update `action.yml`.
+4.  **Commit**: Commit changes to `main`. Since this is a composite action, no build step is required.
 
 ## Security Considerations
 
-✅ API keys handled securely via GitHub Actions secrets
-✅ Input validation for all user inputs
-✅ Safe path resolution (no directory traversal)
-✅ Proper error handling (no sensitive data in logs)
-✅ No command injection vulnerabilities
-✅ Uses official, maintained libraries
-
-## File Exclusions
-
-Default exclusions (can be customized):
-- .git/** (version control)
-- node_modules/** (dependencies)
-- .github/** (workflow files)
-
-## Outputs
-
-The action provides:
-- `upload-status`: success/failed/skipped
-- `files-uploaded`: number of files uploaded
-- `upload-url`: base URL of uploaded content in GCS
+✅ **No Secrets in Action**: The action does not store or require GCS credentials.
+✅ **API Key Validation**: The API key is validated before any operations.
+✅ **Signed URLs**: Uploads are scoped and time-limited by the backend.
+✅ **Input Validation**: All user inputs are validated by the scripts.

@@ -1,0 +1,36 @@
+name: Publish Course to qBraid
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    name: Validate and Publish Course
+    steps:
+      - name: Checkout Course Content
+        uses: actions/checkout@v4
+
+      - name: Publish to qBraid
+        id: publish
+        uses: courseBuilderNelson/UploadActionRepo@main
+        with:
+          # Required: Your qBraid API Key (stored in repository secrets)
+          api-key: ${{ secrets.QBRAID_API_KEY }}
+          
+          # Optional: Path to your course.json file (defaults to 'course.json')
+          course-json-path: './course.json'
+          
+          # Optional: Root directory of your course content (defaults to '.')
+          source-path: '.'
+          
+          # Optional: Patterns to exclude from upload
+          exclude-patterns: '.git/**,node_modules/**,.github/**,*.log'
+
+      - name: Show Output
+        run: |
+          echo "Course deployed successfully!"
+          echo "Course URL: ${{ steps.publish.outputs.qbook_url }}"
