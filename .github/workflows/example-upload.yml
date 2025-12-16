@@ -1,0 +1,40 @@
+name: Example - Upload to GCS
+
+# This is an example workflow demonstrating how to use this action
+# Users would copy this to their own repositories and customize it
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+  # Uncomment the triggers you want:
+  # push:
+  #   branches: [ main ]
+  # release:
+  #   types: [published]
+
+jobs:
+  upload-to-gcs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Optional: Build your project before uploading
+      # - name: Build project
+      #   run: npm run build
+
+      - name: Upload to GCS
+        uses: ./  # When testing locally, use ./ ; in production use: courseBuilderNelson/UploadActionRepo@v1
+        with:
+          bucket-name: 'your-bucket-name'  # Replace with your actual bucket name
+          api-key: ${{ secrets.QBRAID_API_KEY }}
+          source-path: '.'  # Upload entire repository (you can change to './dist' or other paths)
+          destination-path: 'uploads/${{ github.sha }}'  # Optional: organize by commit SHA
+          exclude-patterns: '.git/**,node_modules/**,.github/**,*.log'
+
+      - name: Display upload results
+        run: |
+          echo "Upload completed!"
+          echo "Files uploaded: ${{ steps.upload.outputs.files-uploaded }}"
+          echo "Status: ${{ steps.upload.outputs.upload-status }}"
+          echo "URL: ${{ steps.upload.outputs.upload-url }}"
