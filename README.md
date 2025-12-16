@@ -1,13 +1,17 @@
-# Upload to GCS Action
+# Upload to GCS Action & Course Deployment Workflow
 
-A GitHub Action that uploads repository contents to a Google Cloud Storage (GCS) bucket with qBraid API key authentication.
+A GitHub Action and reusable workflow for deploying educational courses to qBraid's learning platform with automated validation and GCS storage.
 
-## Description
+## Overview
 
-This action allows you to automatically upload files from your GitHub repository to a preconfigured Google Cloud Storage bucket. It's designed to work with qBraid's authentication system, making it easy to publish your repository contents to GCS as part of your CI/CD workflow.
+This repository provides two main components:
+
+1. **Upload Action** - A GitHub Action for uploading files to Google Cloud Storage
+2. **Deploy Course Workflow** - A complete reusable workflow for deploying educational courses to qBraid
 
 ## Features
 
+### Upload Action
 - 🚀 Upload files and directories to GCS bucket
 - 🔐 Secure authentication using qBraid API key
 - 📁 Flexible source and destination path configuration
@@ -15,7 +19,48 @@ This action allows you to automatically upload files from your GitHub repository
 - 📊 Detailed upload status and metrics
 - 🔒 Preconfigured GCS bucket (no bucket configuration needed)
 
-## Usage
+### Deploy Course Workflow
+- ✅ Validates course.json structure
+- 📓 Verifies all notebook files exist
+- 🖼️ Checks image references in notebooks
+- ☁️ Uploads course content to GCS
+- 🎓 Creates course via qBraid API
+- ⏱️ Polls for processing completion
+- 📬 Sends deployment notifications
+
+---
+
+## 🎓 Deploy Course Workflow (Recommended for Course Creators)
+
+If you're creating educational courses for qBraid, use the **reusable workflow** which handles the complete deployment process.
+
+### Quick Start
+
+1. Create a `course.json` file in your repository root
+2. Add `QBRAID_API_KEY` to your repository secrets
+3. Create a workflow file:
+
+```yaml
+name: Deploy Course
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    uses: courseBuilderNelson/UploadActionRepo/.github/workflows/deploy-course.yml@v1
+    secrets:
+      QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
+```
+
+📚 **[Complete Workflow Documentation →](WORKFLOW_GUIDE.md)**
+
+---
+
+## 📦 Upload Action (For Advanced Use Cases)
+
+For direct file uploads to GCS without course validation, use the action directly.
 
 ### Prerequisites
 
