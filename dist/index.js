@@ -81972,18 +81972,16 @@ async function uploadFiles(storage, bucketName, files, sourcePath, destinationPa
       const relativePath = path.relative(sourcePathResolved, filePath);
       
       // Construct destination path in bucket (using posix for cloud storage)
-      let destinationFile = relativePath.replace(/\\/g, '/');
-      if (destinationPath) {
-        destinationFile = path.posix.join(destinationPath, relativePath.replace(/\\/g, '/'));
-      }
+      // Normalize path separators to forward slashes for cloud storage
+      const normalizedPath = relativePath.replace(/\\/g, '/');
+      const destinationFile = destinationPath 
+        ? path.posix.join(destinationPath, normalizedPath)
+        : normalizedPath;
 
       core.info(`Uploading: ${relativePath} -> ${destinationFile}`);
 
       await bucket.upload(filePath, {
         destination: destinationFile,
-        metadata: {
-          cacheControl: 'public, max-age=3600',
-        },
       });
 
       uploadedCount++;
