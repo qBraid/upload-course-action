@@ -3,6 +3,15 @@ import sys
 import os
 import re
 
+def check_file_size(file_path, context):
+    limit_mb = 5
+    limit_bytes = limit_mb * 1024 * 1024
+    if os.path.exists(file_path):
+        size = os.path.getsize(file_path)
+        if size > limit_bytes:
+            print(f"ERROR: {context} file '{file_path}' exceeds {limit_mb}MB limit ({size/1024/1024:.2f}MB)")
+            sys.exit(1)
+
 def validate_course_json(course_file):
     if not os.path.exists(course_file):
         print(f"ERROR: {course_file} not found in repository root")
@@ -38,6 +47,9 @@ def validate_course_json(course_file):
                 print(f"ERROR: Chapter {idx} missing '{field}'")
                 sys.exit(1)
         
+        # Check chapter file size
+        check_file_size(chapter['baseFilePath'], f"Chapter {idx}")
+        
         # Check for sections if present
         if 'sections' in chapter:
             if not isinstance(chapter['sections'], list):
@@ -49,6 +61,9 @@ def validate_course_json(course_file):
                     if field not in section:
                         print(f"ERROR: Chapter {idx}, Section {section_idx} missing '{field}'")
                         sys.exit(1)
+                
+                # Check section file size
+                check_file_size(section['baseFilePath'], f"Chapter {idx}, Section {section_idx}")
 
     print("✅ course.json structure is valid")
 

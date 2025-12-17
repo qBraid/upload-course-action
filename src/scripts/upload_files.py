@@ -10,7 +10,7 @@ def get_signed_urls(api_key, files, course_name):
     """
     Request signed URLs for a list of files from qBraid API.
     """
-    api_url = f'{API_BASE_URL}/learn/signed-urls'
+    api_url = f'{API_BASE_URL}/api/v1/learn/articles/signed-url'
     
     payload = {
         'courseName': course_name,
