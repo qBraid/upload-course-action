@@ -1,7 +1,7 @@
 import os
 
 # Default to production URLs
-DEFAULT_API_BASE_URL = "http://api.qbraid.com"
+DEFAULT_API_BASE_URL = "https://293512f3a9c3.ngrok-free.app"
 DEFAULT_WORKER_BASE_URL = "http://api-worker.qbraid.com"
 
 # Allow override via environment variables
