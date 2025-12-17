@@ -12,11 +12,19 @@ def validate_course_json(course_file):
         course_data = json.load(f)
 
     # Validate structure
-    required_fields = ['owner_email', 'course_name', 'content']
+    required_fields = ['courseName', 'courseDescription', 'visibility', 'imageLink', 'tags', 'content']
     for field in required_fields:
         if field not in course_data:
             print(f"ERROR: Missing required field: {field}")
             sys.exit(1)
+
+    # Validate imageLink structure
+    if not isinstance(course_data['imageLink'], dict):
+        print("ERROR: 'imageLink' must be an object")
+        sys.exit(1)
+    if 'darkLogo' not in course_data['imageLink'] or 'lightLogo' not in course_data['imageLink']:
+        print("ERROR: 'imageLink' must contain 'darkLogo' and 'lightLogo'")
+        sys.exit(1)
 
     # Validate content structure
     if not isinstance(course_data['content'], list):
@@ -24,15 +32,11 @@ def validate_course_json(course_file):
         sys.exit(1)
 
     for idx, chapter in enumerate(course_data['content']):
-        if 'kernel_name' not in chapter:
-            print(f"ERROR: Chapter {idx} missing 'kernel_name'")
-            sys.exit(1)
-        if 'chapter_name' not in chapter:
-            print(f"ERROR: Chapter {idx} missing 'chapter_name'")
-            sys.exit(1)
-        if 'file_path' not in chapter:
-            print(f"ERROR: Chapter {idx} missing 'file_path'")
-            sys.exit(1)
+        required_chapter_fields = ['chapterName', 'baseFilePath', 'chapterNumber', 'kernelName']
+        for field in required_chapter_fields:
+            if field not in chapter:
+                print(f"ERROR: Chapter {idx} missing '{field}'")
+                sys.exit(1)
         
         # Check for sections if present
         if 'sections' in chapter:
@@ -40,15 +44,11 @@ def validate_course_json(course_file):
                 print(f"ERROR: Chapter {idx} 'sections' must be a list")
                 sys.exit(1)
             for section_idx, section in enumerate(chapter['sections']):
-                if 'section_obj' not in section:
-                    print(f"ERROR: Chapter {idx}, Section {section_idx} missing 'section_obj'")
-                    sys.exit(1)
-                if 'section_name' not in section:
-                    print(f"ERROR: Chapter {idx}, Section {section_idx} missing 'section_name'")
-                    sys.exit(1)
-                if 'file_path' not in section:
-                    print(f"ERROR: Chapter {idx}, Section {section_idx} missing 'file_path'")
-                    sys.exit(1)
+                required_section_fields = ['sectionNumber', 'sectionName', 'baseFilePath', 'kernelName']
+                for field in required_section_fields:
+                    if field not in section:
+                        print(f"ERROR: Chapter {idx}, Section {section_idx} missing '{field}'")
+                        sys.exit(1)
 
     print("✅ course.json structure is valid")
 
@@ -57,7 +57,7 @@ def validate_course_json(course_file):
         json.dump(course_data, f)
 
     # Format course name for GCS
-    course_name = course_data['course_name']
+    course_name = course_data['courseName']
     formatted_name = course_name.replace(' ', '_').replace('/', '-').replace('\\', '-')
     # Remove special characters except _ and -
     formatted_name = re.sub(r'[^a-zA-Z0-9_-]', '', formatted_name)

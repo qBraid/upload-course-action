@@ -15,8 +15,8 @@ def create_course(api_key):
     # Call qBraid API to create course
     try:
         response = requests.post(
-            f'{API_BASE_URL}/learn/create',
-            json={'data': course_data},
+            f'{API_BASE_URL}/api/v1/learn/articles/course',
+            json={'data': course_data,'forceDuplicateQuestions':True},
             headers={'X-API-Key': api_key} 
         )
         

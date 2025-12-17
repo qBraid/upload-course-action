@@ -63,12 +63,12 @@ def verify_images():
 
     # Check all notebooks
     for chapter in course_data['content']:
-        file_path = chapter['file_path']
+        file_path = chapter['baseFilePath']
         check_notebook_images(file_path, missing_images)
         
         if 'sections' in chapter:
             for section in chapter['sections']:
-                section_path = section['file_path']
+                section_path = section['baseFilePath']
                 check_notebook_images(section_path, missing_images)
 
     if missing_images:

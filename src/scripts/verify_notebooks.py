@@ -13,13 +13,13 @@ def verify_notebooks():
     missing_files = []
 
     for chapter in course_data['content']:
-        file_path = chapter['file_path']
+        file_path = chapter['baseFilePath']
         if not os.path.exists(file_path):
             missing_files.append(f"Chapter: {file_path}")
         
         if 'sections' in chapter:
             for section in chapter['sections']:
-                section_path = section['file_path']
+                section_path = section['baseFilePath']
                 if not os.path.exists(section_path):
                     missing_files.append(f"Section: {section_path}")
 

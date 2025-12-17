@@ -1,45 +1,72 @@
 {
-  "owner_email": "instructor@example.com",
-  "course_name": "Introduction to Quantum Computing",
+  "courseName": "Introduction to Quantum Computing",
+  "courseDescription": "A beginner-friendly course on the fundamentals of quantum computing, covering qubits, quantum gates, and basic algorithms.",
+  "visibility": "public",
+  "imageLink": {
+    "darkLogo": "https://img.freepik.com/free-vector/gradient-quantum-illustration_52683-80504.jpg",
+    "lightLogo": "https://img.freepik.com/free-vector/gradient-quantum-illustration_52683-80504.jpg"
+  },
+  "tags": [
+    "quantum computing",
+    "qubits",
+    "quantum gates",
+    "algorithms",
+    "beginner"
+  ],
   "content": [
     {
-      "kernel_name": "python3",
-      "chapter_name": "Quantum Basics",
-      "file_path": "./notebooks/chapter1_basics.ipynb",
+      "chapterName": "Quantum Basics",
+      "chapterFileName": "chapter1_basics.ipynb",
+      "filePath": "",
+      "baseFilePath": "./notebooks/chapter1_basics.ipynb",
+      "chapterNumber": 1,
+      "kernelName":"qbraid_python",
+      "kernelId":"QBraid Python",
       "sections": [
         {
-          "section_obj": 1,
-          "section_name": "What is Quantum Computing",
-          "file_path": "./notebooks/sections/chapter1_section1.ipynb"
+          "sectionNumber":1.1,
+          "sectionName": "What is Quantum Computing",
+          "filePath":"",
+          "baseFilePath": "./notebooks/sections/chapter1_section1.ipynb",
+          "kernelName":"qbraid_python",
+          "kernelId":"QBraid Python"
         },
         {
-          "section_obj": 2,
-          "section_name": "Qubits and Superposition",
-          "file_path": "./notebooks/sections/chapter1_section2.ipynb"
+          "sectionNumber":1.2,
+          "sectionName": "Qubits and Superposition",
+          "filePath": "",
+          "baseFilePath": "./notebooks/sections/chapter1_section2.ipynb",
+          "kernelName":"qbraid_python",
+          "kernelId":"QBraid Python"
         }
       ]
     },
     {
-      "kernel_name": "python3",
-      "chapter_name": "Quantum Gates",
-      "file_path": "./notebooks/chapter2_gates.ipynb",
+      "chapterName": "Quantum Introduction",
+      "chapterFileName": "chapter1_introduction.ipynb",
+      "filePath": "",
+      "baseFilePath": "./notebooks/chapter1_introduction.ipynb",
+      "chapterNumber": 1,
+      "kernelName":"qbraid_python",
+      "kernelId":"QBraid Python",
       "sections": [
         {
-          "section_obj": 1,
-          "section_name": "Single Qubit Gates",
-          "file_path": "./notebooks/sections/chapter2_section1.ipynb"
+          "sectionNumber":1.1,
+          "sectionName": "Introduction to Quantum Computing",
+          "filePath":"",
+          "baseFilePath": "./notebooks/sections/chapter2_section1.ipynb",
+          "kernelName":"qbraid_python",
+          "kernelId":"QBraid Python"
         },
         {
-          "section_obj": 2,
-          "section_name": "Multi Qubit Gates",
-          "file_path": "./notebooks/sections/chapter2_section2.ipynb"
+          "sectionNumber":1.2,
+          "sectionName": "Qubits and Quantum States",
+          "filePath": "",
+          "baseFilePath": "./notebooks/sections/chapter2_section2.ipynb",
+          "kernelName":"qbraid_python",
+          "kernelId":"QBraid Python"
         }
       ]
-    },
-    {
-      "kernel_name": "python3",
-      "chapter_name": "Quantum Algorithms",
-      "file_path": "./notebooks/chapter3_algorithms.ipynb"
     }
   ]
 }

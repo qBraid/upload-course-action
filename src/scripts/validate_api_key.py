@@ -7,7 +7,7 @@ def validate_api_key(api_key):
     """
     Validate the qBraid API key using the verification endpoint.
     """
-    verify_url = f'{API_BASE_URL}/users/verify'
+    verify_url = f'{API_BASE_URL}/api/v1/users/verify'
     
     print(f"Validating API key against {verify_url}...")
     
