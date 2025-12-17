@@ -2,9 +2,10 @@ import requests
 import time
 import sys
 import os
+from config import WORKER_BASE_URL
 
 def poll_worker(api_key, formatted_name):
-    worker_url = 'http://api-worker.qbraid.com'
+    worker_url = WORKER_BASE_URL
     
     max_attempts = 60  # Poll for up to 30 minutes (60 * 30 seconds)
     attempt = 0

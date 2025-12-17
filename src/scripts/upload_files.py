@@ -4,12 +4,13 @@ import json
 import requests
 from glob import glob
 import fnmatch
+from config import API_BASE_URL
 
 def get_signed_urls(api_key, files, course_name):
     """
     Request signed URLs for a list of files from qBraid API.
     """
-    api_url = 'http://api.qbraid.com/api/v1/learn/signed-urls'
+    api_url = f'{API_BASE_URL}/learn/signed-urls'
     
     payload = {
         'courseName': course_name,

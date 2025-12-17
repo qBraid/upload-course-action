@@ -2,6 +2,7 @@ import json
 import requests
 import sys
 import os
+from config import API_BASE_URL
 
 def create_course(api_key):
     if not os.path.exists('course_data.json'):
@@ -14,7 +15,7 @@ def create_course(api_key):
     # Call qBraid API to create course
     try:
         response = requests.post(
-            'http://api.qbraid.com/api/v1/learn/create',
+            f'{API_BASE_URL}/learn/create',
             json={'data': course_data},
             headers={'X-API-Key': api_key} 
         )
