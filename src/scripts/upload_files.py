@@ -4,18 +4,25 @@ import json
 import requests
 import nbformat
 import re
-import fnmatch
+import shutil
+import tempfile
 from config import API_BASE_URL
 
-def get_signed_urls(api_key, files, course_name):
+def sanitize_name(name):
+    """Sanitize string to be used as directory name."""
+    # Replace spaces with underscores, remove non-alphanumeric (except _ and -)
+    s = re.sub(r'[^a-zA-Z0-9_-]', '', name.replace(' ', '_'))
+    return s if s else 'unnamed'
+
+def get_signed_urls(api_key, zipFile, course_name):
     """
     Request signed URLs for a list of files from qBraid API.
     """
-    api_url = f'{API_BASE_URL}/api/v1/learn/articles/signed-urls'
+    api_url = f'{API_BASE_URL}/learn/signed-urls'
     
     payload = {
         'courseName': course_name,
-        'files': files
+        'file': zipFile
     }
     
     try:
@@ -35,59 +42,106 @@ def get_signed_urls(api_key, files, course_name):
         print(f"ERROR: Exception while requesting signed URLs: {e}")
         sys.exit(1)
 
-def get_notebook_assets(notebook_path):
-    """Extract local image/asset paths from a notebook file."""
-    assets = []
-    notebook_dir = os.path.dirname(notebook_path)
-    
+def process_notebook(src_path, dest_dir, assets_dir_name="assets_folder"):
+    """
+    Reads a notebook, extracts images, copies them to assets folder,
+    updates image links, and saves the notebook to dest_dir.
+    Returns the filename of the saved notebook.
+    """
+    if not os.path.exists(src_path):
+        print(f"WARNING: Notebook not found: {src_path}")
+        return None
+
     try:
-        with open(notebook_path, 'r', encoding='utf-8') as f:
+        with open(src_path, 'r', encoding='utf-8') as f:
             nb = nbformat.read(f, as_version=4)
     except Exception as e:
-        print(f"WARNING: Could not read notebook {notebook_path}: {e}")
-        return assets
+        print(f"ERROR: Could not read notebook {src_path}: {e}")
+        return None
 
-    images_to_check = []
+    notebook_dir = os.path.dirname(src_path)
+    assets_dir = os.path.join(dest_dir, assets_dir_name)
+    
+    # Ensure assets directory exists if we find images
+    assets_created = False
+
+    # Helper to process image path
+    def process_image_path(img_path):
+        nonlocal assets_created
+        
+        # Skip URLs
+        if img_path.startswith('http://') or img_path.startswith('https://'):
+            return img_path
+            
+        # Resolve absolute path of the source image
+        if img_path.startswith('/'):
+            # Assuming absolute path from repo root
+            # We need to know repo root. Assuming script runs from repo root.
+            src_img_abs = os.path.abspath(img_path[1:])
+        else:
+            src_img_abs = os.path.abspath(os.path.join(notebook_dir, img_path))
+            
+        if not os.path.exists(src_img_abs):
+            print(f"WARNING: Image not found: {src_img_abs} (referenced in {src_path})")
+            return img_path # Keep original if not found
+
+        # Create assets dir if needed
+        if not assets_created:
+            os.makedirs(assets_dir, exist_ok=True)
+            assets_created = True
+
+        # Determine destination filename (handle collisions)
+        img_filename = os.path.basename(src_img_abs)
+        dest_img_path = os.path.join(assets_dir, img_filename)
+        
+        # If file exists and is different, rename
+        if os.path.exists(dest_img_path):
+            # Simple check: if paths are different, assume content might be different
+            # For now, just append a counter if it's not the exact same file path we processed before
+            # But we are in a fresh temp dir, so collision means same filename from different sources
+            base, ext = os.path.splitext(img_filename)
+            counter = 1
+            while os.path.exists(os.path.join(assets_dir, f"{base}_{counter}{ext}")):
+                counter += 1
+            img_filename = f"{base}_{counter}{ext}"
+            dest_img_path = os.path.join(assets_dir, img_filename)
+
+        # Copy image
+        shutil.copy2(src_img_abs, dest_img_path)
+        
+        # Return new relative path
+        return f"{assets_dir_name}/{img_filename}"
+
+    # Iterate cells and update references
     for cell in nb.cells:
         if cell.cell_type == 'markdown':
-            # Find markdown image references: ![alt](path)
-            md_images = re.findall(r'!\[.*?\]\((.*?)\)', cell.source)
-            images_to_check.extend(md_images)
+            # Update Markdown image references: ![alt](path)
+            cell.source = re.sub(
+                r'(!\[.*?\]\()(.+?)(\))',
+                lambda m: f"{m.group(1)}{process_image_path(m.group(2))}{m.group(3)}",
+                cell.source
+            )
             
-            # Find HTML img tags: <img src="path">
-            html_images = re.findall(r'<img[^>]+src=["\']([^"\']+)["\']', cell.source)
-            images_to_check.extend(html_images)
+            # Update HTML img tags: <img src="path">
+            cell.source = re.sub(
+                r'(<img[^>]+src=["\'])(.+?)(["\'])',
+                lambda m: f"{m.group(1)}{process_image_path(m.group(2))}{m.group(3)}",
+                cell.source
+            )
+
+    # Save updated notebook
+    nb_filename = os.path.basename(src_path)
+    dest_nb_path = os.path.join(dest_dir, nb_filename)
     
-    for img_ref in images_to_check:
-        # Skip URLs
-        if img_ref.startswith('http://') or img_ref.startswith('https://'):
-            continue
+    with open(dest_nb_path, 'w', encoding='utf-8') as f:
+        nbformat.write(nb, f)
         
-        # Resolve path
-        if img_ref.startswith('/'):
-            # Absolute path from repo root (remove leading /)
-            # Note: We assume the script runs from repo root or we need to handle this carefully.
-            # But here we are returning absolute paths.
-            # If img_ref starts with /, it's usually relative to the root of the Jupyter server, 
-            # which often maps to the repo root in this context.
-            abs_path = os.path.abspath(img_ref[1:])
-        else:
-            # Relative path from notebook directory
-            abs_path = os.path.abspath(os.path.join(notebook_dir, img_ref))
-            
-        if os.path.exists(abs_path):
-            assets.append(abs_path)
-            
-    return assets
+    return nb_filename
 
 def upload_files(api_key, source_path, exclude_patterns_str, formatted_course_name):
     # Resolve source path (repo root)
     resolved_source_path = os.path.abspath(source_path)
-    if not os.path.exists(resolved_source_path):
-        print(f"ERROR: Source path does not exist: {resolved_source_path}")
-        sys.exit(1)
-
-    # Load course_data.json to identify required files
+    
     if not os.path.exists('course_data.json'):
         print("ERROR: course_data.json not found. Run validation first.")
         sys.exit(1)
@@ -95,109 +149,100 @@ def upload_files(api_key, source_path, exclude_patterns_str, formatted_course_na
     with open('course_data.json', 'r') as f:
         course_data = json.load(f)
 
-    # Collect files to upload
-    files_to_upload = set()
-    
-    # 1. Add course.json (assuming it's in the root or we know its path)
-    course_json_path = os.path.join(resolved_source_path, 'course.json')
-    if os.path.exists(course_json_path):
-        files_to_upload.add(course_json_path)
-
-    # 2. Add notebooks and their assets
-    for chapter in course_data.get('content', []):
-        # Add chapter notebook
-        if 'baseFilePath' in chapter:
-            nb_path = os.path.abspath(os.path.join(resolved_source_path, chapter['baseFilePath']))
-            if os.path.exists(nb_path):
-                files_to_upload.add(nb_path)
-                # Add assets from this notebook
-                assets = get_notebook_assets(nb_path)
-                files_to_upload.update(assets)
+    # Create a temporary directory for the course package
+    with tempfile.TemporaryDirectory() as temp_dir:
+        print(f"Created temporary directory: {temp_dir}")
         
-        # Add section notebooks
-        if 'sections' in chapter:
-            for section in chapter['sections']:
-                if 'baseFilePath' in section:
-                    nb_path = os.path.abspath(os.path.join(resolved_source_path, section['baseFilePath']))
-                    if os.path.exists(nb_path):
-                        files_to_upload.add(nb_path)
-                        # Add assets from this notebook
-                        assets = get_notebook_assets(nb_path)
-                        files_to_upload.update(assets)
-
-    if not files_to_upload:
-        print("WARNING: No files found to upload")
-        return
-
-    print(f"Found {len(files_to_upload)} files to upload (notebooks + assets + course.json)")
-    
-    # Prepare list of relative paths for API
-    relative_paths = []
-    path_map = {} # Map relative path to absolute path
-    
-    exclude_patterns = [p.strip() for p in exclude_patterns_str.split(',') if p.strip()]
-
-    for f in files_to_upload:
-        rel_path = os.path.relpath(f, resolved_source_path)
-        
-        # Apply exclude patterns just in case
-        excluded = False
-        for pattern in exclude_patterns:
-            if fnmatch.fnmatch(rel_path, pattern) or fnmatch.fnmatch(os.path.basename(f), pattern):
-                excluded = True
-                break
-            if pattern.endswith('**'):
-                dir_pattern = pattern[:-2]
-                if rel_path.startswith(dir_pattern):
-                    excluded = True
-                    break
-        
-        if excluded:
-            continue
-
-        # Normalize to forward slashes
-        normalized_path = rel_path.replace(os.sep, '/')
-        relative_paths.append(normalized_path)
-        path_map[normalized_path] = f
-
-    if not relative_paths:
-        print("WARNING: No files left to upload after exclusion")
-        return
-
-    # Get signed URLs
-    print("Requesting signed upload URLs...")
-    signed_urls = get_signed_urls(api_key, relative_paths, formatted_course_name)
-    
-    print(f"Received {len(signed_urls)} signed URLs")
-
-    uploaded_count = 0
-    for rel_path, signed_url in signed_urls.items():
-        if rel_path not in path_map:
-            print(f"WARNING: Received URL for unknown file: {rel_path}")
-            continue
+        # 1. Process Chapters
+        for chapter in course_data.get('content', []):
+            chapter_name = chapter.get('chapterName', 'Untitled_Chapter')
+            safe_chapter_name = sanitize_name(chapter_name)
             
-        file_path = path_map[rel_path]
-        print(f"Uploading {rel_path}...")
+            chapter_dir = os.path.join(temp_dir, safe_chapter_name)
+            os.makedirs(chapter_dir, exist_ok=True)
+            
+            # Process Chapter Notebook
+            if 'baseFilePath' in chapter:
+                src_nb = os.path.join(resolved_source_path, chapter['baseFilePath'])
+                new_nb_name = process_notebook(src_nb, chapter_dir)
+                
+                if new_nb_name:
+                    # Update course_data with new relative path
+                    chapter['baseFilePath'] = f"{safe_chapter_name}/{new_nb_name}"
+            
+            # Process Sections
+            if 'sections' in chapter:
+                section_folder_dir = os.path.join(chapter_dir, 'section_folder')
+                
+                for section in chapter['sections']:
+                    section_name = section.get('sectionName', 'Untitled_Section')
+                    safe_section_name = sanitize_name(section_name)
+                    
+                    section_dir = os.path.join(section_folder_dir, safe_section_name)
+                    os.makedirs(section_dir, exist_ok=True)
+                    
+                    if 'baseFilePath' in section:
+                        src_nb = os.path.join(resolved_source_path, section['baseFilePath'])
+                        new_nb_name = process_notebook(src_nb, section_dir)
+                        
+                        if new_nb_name:
+                            # Update course_data with new relative path
+                            # Path is Chapter/section_folder/Section/notebook.ipynb
+                            section['baseFilePath'] = f"{safe_chapter_name}/section_folder/{safe_section_name}/{new_nb_name}"
+
+        # 2. Save updated course.json to root of temp dir
+        with open(os.path.join(temp_dir, 'course.json'), 'w') as f:
+            json.dump(course_data, f, indent=2)
+            
+        # 3. Create Zip Archive
+        zip_filename = f"{formatted_course_name}.zip"
+        zip_path = os.path.join(os.getcwd(), zip_filename)
+        
+        print(f"Creating archive: {zip_path}")
+        shutil.make_archive(os.path.splitext(zip_path)[0], 'zip', temp_dir)
+        
+        if not os.path.exists(zip_path):
+            print("ERROR: Failed to create zip archive")
+            sys.exit(1)
+            
+        print(f"Archive created successfully. Size: {os.path.getsize(zip_path) / 1024 / 1024:.2f} MB")
+
+        # 4. Upload Zip
+        print("Requesting signed upload URL for archive...")
+        # Pass filename as string
+        response_data = get_signed_urls(api_key, zip_filename, formatted_course_name)
+        
+        upload_url = None
+        if 'signedURL' in response_data:
+            upload_url = response_data['signedURL']
+        
+        if not upload_url:
+            print(f"ERROR: API did not return signed URL. Response: {response_data}")
+            sys.exit(1)
+            
+        print(f"Uploading {zip_filename}...")
         
         try:
-            with open(file_path, 'rb') as f:
+            with open(zip_path, 'rb') as f:
                 upload_response = requests.put(
-                    signed_url,
+                    upload_url,
                     data=f,
                     headers={'Content-Type': 'application/octet-stream'}
                 )
                 
                 if upload_response.status_code == 200:
-                    uploaded_count += 1
+                    print("✅ Upload successful!")
                 else:
-                    print(f"ERROR: Failed to upload {rel_path}. Status: {upload_response.status_code}")
+                    print(f"ERROR: Failed to upload archive. Status: {upload_response.status_code}")
+                    print(upload_response.text)
+                    sys.exit(1)
         except Exception as e:
-            print(f"ERROR: Exception uploading {rel_path}: {e}")
-
-    print(f"Successfully uploaded {uploaded_count}/{len(relative_paths)} files")
-    
-    if uploaded_count < len(relative_paths):
-        sys.exit(1)
+            print(f"ERROR: Exception during upload: {e}")
+            sys.exit(1)
+            
+        # Cleanup zip file (temp dir is auto-cleaned)
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
