@@ -1,6 +1,6 @@
-# Deploy Course to qBraid Action
+# Deploy Course Action
 
-A GitHub Action for deploying educational courses to qBraid's learning platform with automated validation and secure file upload.
+A GitHub Action for deploying educational courses to  learning platform with automated validation and secure file upload.
 
 ## Overview
 
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to qBraid
-        uses: courseBuilderNelson/UploadActionRepo@main
+        uses: courseBuilderNelson/UploadActionRepo@latest
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
 ```
