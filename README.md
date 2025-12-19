@@ -19,7 +19,8 @@ This action provides a complete end-to-end solution for deploying courses:
 
 1.  Create a `course.json` file in your repository root.
 2.  Add `QBRAID_API_KEY` to your repository secrets.
-3.  Create a workflow file (e.g., `.github/workflows/deploy.yml`):
+3.  **Enable Permissions**: Go to **Settings** > **Actions** > **General** > **Workflow permissions** and select **Read and write permissions**. This is required for the action to post deployment notifications.
+4.  Create a workflow file (e.g., `.github/workflows/deploy.yml`):
 
 ```yaml
 name: Deploy Course
@@ -27,6 +28,9 @@ name: Deploy Course
 on:
   push:
     branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
   deploy:

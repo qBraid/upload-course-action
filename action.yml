@@ -104,9 +104,17 @@ runs:
       uses: actions/github-script@v7
       with:
         script: |
-          github.rest.repos.createCommitComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            commit_sha: context.sha,
-            body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-worker.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
-          })
+          try {
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-worker.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
+            });
+          } catch (error) {
+            if (error.status === 403) {
+              core.warning('Could not create commit comment due to missing permissions. Please ensure the workflow has "contents: write" permission or "Read and write permissions" are enabled in repository settings.');
+            } else {
+              core.warning(`Failed to send notification: ${error.message}`);
+            }
+          }
