@@ -75,11 +75,11 @@ runs:
       run: |
         python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}'
 
-    - name: Stage 6 - Poll worker service for completion
-      id: poll-worker
-      shell: bash
-      run: |
-        python ${{ github.action_path }}/src/scripts/poll_worker.py '${{ inputs.api-key }}' '${{ steps.validate-course.outputs.formatted_course_name }}'
+    # - name: Stage 6 - Poll worker service for completion
+    #   id: poll-worker
+    #   shell: bash
+    #   run: |
+    #     python ${{ github.action_path }}/src/scripts/poll_worker.py '${{ inputs.api-key }}' '${{ steps.validate-course.outputs.formatted_course_name }}'
 
     - name: Create deployment summary
       if: success()
