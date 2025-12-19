@@ -33,6 +33,9 @@ jobs:
           # Optional: Patterns to exclude from upload
           exclude-patterns: '.git/**,node_modules/**,.github/**,*.log'
 
+          # Optional: Type of article to create (course or blog)
+          article-type: 'course'
+
       - name: Show Output
         run: |
           echo "Course deployed successfully!"

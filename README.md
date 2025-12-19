@@ -53,6 +53,7 @@ jobs:
 | `course-json-path` | Path to `course.json` file | No | `course.json` |
 | `source-path` | Directory to upload (relative to root) | No | `.` |
 | `exclude-patterns` | Glob patterns to exclude | No | `.git/**,node_modules/**,.github/**` |
+| `article-type` | Type of article to create (`course` or `blog`) | No | `course` |
 
 ## Outputs
 
