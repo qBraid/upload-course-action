@@ -28,7 +28,7 @@ outputs:
     value: ${{ steps.validate-course.outputs.formatted_course_name }}
   qbook_url:
     description: 'URL of the deployed course'
-    value: ${{ steps.poll-worker.outputs.qbook_url }}
+    value: ${{ steps.create-course.outputs.qbook_url }}
 
 runs:
   using: "composite"
@@ -91,7 +91,7 @@ runs:
         Your course has been successfully deployed to qBraid!
         
         **Course Name:** ${{ steps.validate-course.outputs.formatted_course_name }}
-        **qBook URL:** ${{ steps.poll-worker.outputs.qbook_url }}
+        **qBook URL:** ${{ steps.create-course.outputs.qbook_url }}
         
         ## Next Steps
         
@@ -109,7 +109,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-worker.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.create-course.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
             });
           } catch (error) {
             if (error.status === 403) {
