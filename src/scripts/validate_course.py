@@ -21,7 +21,7 @@ def validate_course_json(course_file):
         course_data = json.load(f)
 
     # Validate structure
-    required_fields = ['courseName', 'courseDescription', 'visibility', 'imageLink', 'tags', 'content']
+    required_fields = ['courseName', 'courseDescription', 'visibility', 'imageLink', 'tags', 'content','deployedTo']
     for field in required_fields:
         if field not in course_data:
             print(f"ERROR: Missing required field: {field}")
@@ -39,6 +39,20 @@ def validate_course_json(course_file):
     if not isinstance(course_data['content'], list):
         print("ERROR: 'content' must be a list of chapters")
         sys.exit(1)
+
+    if not isinstance(course_data['deployedTo'], list):
+        print("ERROR: 'deployedTo' must be a list")
+        sys.exit(1)
+
+    if len(course_data['deployedTo']) == 0:
+        print("ERROR: 'deployedTo' must contain at least one deployment target")
+        sys.exit(1)
+    
+    valid_domains = {'qbraid.com', 'quera.com'}
+    for domain in course_data['deployedTo']:
+        if domain not in valid_domains:
+            print(f"ERROR: Invalid domain '{domain}' in 'deployedTo'. Allowed domains are: {', '.join(valid_domains)}")
+            sys.exit(1)
 
     for idx, chapter in enumerate(course_data['content']):
         required_chapter_fields = ['chapterName', 'baseFilePath', 'chapterNumber', 'kernelName']

@@ -13,6 +13,7 @@
     "algorithms",
     "beginner"
   ],
+  "deployedTo": ["qbraid.com"],
   "content": [
     {
       "chapterName": "Quantum Basics",
@@ -20,24 +21,24 @@
       "filePath": "",
       "baseFilePath": "./notebooks/chapter1_basics.ipynb",
       "chapterNumber": 1,
-      "kernelName":"qbraid_python",
-      "kernelId":"QBraid Python",
+      "kernelName": "qbraid_python",
+      "kernelId": "QBraid Python",
       "sections": [
         {
-          "sectionNumber":1.1,
+          "sectionNumber": 1.1,
           "sectionName": "What is Quantum Computing",
-          "filePath":"",
+          "filePath": "",
           "baseFilePath": "./notebooks/sections/chapter1_section1.ipynb",
-          "kernelName":"qbraid_python",
-          "kernelId":"QBraid Python"
+          "kernelName": "qbraid_python",
+          "kernelId": "QBraid Python"
         },
         {
-          "sectionNumber":1.2,
+          "sectionNumber": 1.2,
           "sectionName": "Qubits and Superposition",
           "filePath": "",
           "baseFilePath": "./notebooks/sections/chapter1_section2.ipynb",
-          "kernelName":"qbraid_python",
-          "kernelId":"QBraid Python"
+          "kernelName": "qbraid_python",
+          "kernelId": "QBraid Python"
         }
       ]
     },
@@ -47,24 +48,24 @@
       "filePath": "",
       "baseFilePath": "./notebooks/chapter1_introduction.ipynb",
       "chapterNumber": 1,
-      "kernelName":"qbraid_python",
-      "kernelId":"QBraid Python",
+      "kernelName": "qbraid_python",
+      "kernelId": "QBraid Python",
       "sections": [
         {
-          "sectionNumber":1.1,
+          "sectionNumber": 1.1,
           "sectionName": "Introduction to Quantum Computing",
-          "filePath":"",
+          "filePath": "",
           "baseFilePath": "./notebooks/sections/chapter2_section1.ipynb",
-          "kernelName":"qbraid_python",
-          "kernelId":"QBraid Python"
+          "kernelName": "qbraid_python",
+          "kernelId": "QBraid Python"
         },
         {
-          "sectionNumber":1.2,
+          "sectionNumber": 1.2,
           "sectionName": "Qubits and Quantum States",
           "filePath": "",
           "baseFilePath": "./notebooks/sections/chapter2_section2.ipynb",
-          "kernelName":"qbraid_python",
-          "kernelId":"QBraid Python"
+          "kernelName": "qbraid_python",
+          "kernelId": "QBraid Python"
         }
       ]
     }
