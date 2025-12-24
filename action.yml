@@ -13,18 +13,17 @@ inputs:
   api-key:
     description: 'qBraid API key for authentication'
     required: true
-  source-path:
-    description: 'Path to the directory or file to upload (relative to repository root)'
-    required: false
-    default: '.'
-  exclude-patterns:
-    description: 'Comma-separated list of glob patterns to exclude from upload'
-    required: false
-    default: '.git/**,node_modules/**,.github/**'
+  repo-read-token:
+    description: 'GitHub token with read access to the repository'
+    required: true
   article-type:
     description: 'Type of article to create (course or blog)'
     required: false
     default: 'course'
+  force-duplicate-questions:
+    description: 'Whether to force upload duplicate questions (true or false)'
+    required: false
+    default: 'false'
 
 outputs:
   formatted_course_name:
@@ -36,6 +35,7 @@ outputs:
   qbook_url:
     description: 'URL of the deployed course'
     value: ${{ steps.create-course.outputs.qbook_url }}
+
 
 runs:
   using: "composite"
@@ -49,6 +49,14 @@ runs:
       shell: bash
       run: |
         pip install -r ${{ github.action_path }}/requirements.txt
+
+    - name: Validate Repo Read Token
+      shell: bash
+      run: |
+        if [[ -z "${{ inputs.repo-read-token }}" ]]; then
+          echo "::error::repo-read-token is empty. Please ensure it is set in the secrets."
+          exit 1
+        fi
 
     - name: Stage 0 - Validate API Key
       shell: bash
@@ -71,18 +79,13 @@ runs:
       run: |
         python ${{ github.action_path }}/src/scripts/check_images.py
 
-    - name: Stage 4 - Upload files to GCS
-      shell: bash
-      run: |
-        python ${{ github.action_path }}/src/scripts/upload_files.py '${{ inputs.api-key }}' '${{ inputs.source-path }}' '${{ inputs.exclude-patterns }}' '${{ steps.validate-course.outputs.formatted_course_name }}'
-
     - name: Stage 5 - Create course via qBraid API
       id: create-course
       shell: bash
       run: |
-        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.article-type }}'
+        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.article-type }}' '${{ inputs.force-duplicate-questions }}' '${{ inputs.repo-read-token }}' '${{ github.repository }}'
 
-    - name: Stage 6 - Poll worker service for completion
+    - name: Stage 6 - Poll status end point for completion
       id: poll-status
       shell: bash
       run: |

@@ -4,6 +4,37 @@ import sys
 import nbformat
 import re
 
+def check_file_size(file_path, max_size_mb=10):
+    """Checks if the file size is within the allowed limit."""
+    try:
+        size_mb = os.path.getsize(file_path) / (1024 * 1024)
+        if size_mb > max_size_mb:
+            return [f"File size {size_mb:.2f}MB exceeds limit of {max_size_mb}MB"]
+        return []
+    except OSError as e:
+        return [f"Could not check file size: {str(e)}"]
+
+def check_nbformat_validity(nb):
+    """Checks if the notebook conforms to the nbformat schema."""
+    try:
+        nbformat.validate(nb)
+        return []
+    except nbformat.ValidationError as e:
+        return [f"Notebook validation error: {str(e)}"]
+
+def check_forbidden_patterns(content):
+    """Checks for forbidden patterns in the notebook content."""
+    forbidden_patterns = [
+        (re.compile(r'token\s*=\s*[\'"][a-zA-Z0-9]+[\'"]'), "Potential API token found"),
+        (re.compile(r'password\s*=\s*[\'"][^\'"]+[\'"]'), "Potential password found"),
+        # Add more patterns as needed
+    ]
+    errors = []
+    for pattern, message in forbidden_patterns:
+        if pattern.search(content):
+            errors.append(message)
+    return errors
+
 def contains_script_tag(input_string):
     """Checks if the input string contains any <script> tags."""
     # Regex to match <script> tags, handling attributes and content
@@ -38,6 +69,16 @@ def validate_notebook_content(file_path):
                 errors.append(f"Cell {idx+1}: Contains forbidden <script> tag")
             if contains_malicious_iframe(content):
                 errors.append(f"Cell {idx+1}: Contains forbidden malicious <iframe> tag")
+            if check_forbidden_patterns(content):
+                pattern_errors = check_forbidden_patterns(content)
+                for err in pattern_errors:
+                    errors.append(f"Cell {idx+1}: {err}")
+                    
+    size_errors = check_file_size(file_path)
+    errors.extend(size_errors)
+    format_errors = check_nbformat_validity(nb)
+    errors.extend(format_errors)
+            
     return errors
 
 def verify_notebooks():
