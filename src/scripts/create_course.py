@@ -41,7 +41,7 @@ def create_course(api_key, article_type='course'):
         # Write to GITHUB_OUTPUT if available
         if 'GITHUB_OUTPUT' in os.environ:
             with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-                f.write(f"course-custom-id={course_custom_id}\n")
+                f.write(f"course_custom_id={course_custom_id}\n")
         
     except Exception as e:
         print(f"ERROR: Exception during API call: {e}")

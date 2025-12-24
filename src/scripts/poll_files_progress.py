@@ -30,7 +30,7 @@ def poll_worker(api_key, course_custom_id):
                     if 'GITHUB_OUTPUT' in os.environ:
                         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                             f.write(f"qbook_url={qbook_url}\n")
-                if status in data:
+                if 'status' in data:
                     status = data['status']
                     match status:
                         case 'unprocessed':
