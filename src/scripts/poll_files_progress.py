@@ -16,7 +16,7 @@ def poll_worker(api_key, course_custom_id):
         try:
             response = requests.get(
                 f'{API_BASE_URL}/api/v1/learn/articles/files/status/{course_custom_id}',
-                headers={'Authorization': f'Bearer {api_key}'}
+                headers={'X-API-Key': api_key} 
             )
             
             if response.status_code == 200:
