@@ -15,7 +15,7 @@ def poll_worker(api_key, course_custom_id):
         
         try:
             response = requests.get(
-                f'{API_BASE_URL}/learn/articles/files/status/{course_custom_id}',
+                f'{API_BASE_URL}/api/v1/learn/articles/files/status/{course_custom_id}',
                 headers={'Authorization': f'Bearer {api_key}'}
             )
             
