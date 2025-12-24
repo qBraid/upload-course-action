@@ -30,6 +30,9 @@ outputs:
   formatted_course_name:
     description: 'Formatted course name used for GCS storage'
     value: ${{ steps.validate-course.outputs.formatted_course_name }}
+  course-custom-id:
+    description: 'Custom ID of the deployed course'
+    value: ${{ steps.create-course.outputs.course_custom_id }}
   qbook_url:
     description: 'URL of the deployed course'
     value: ${{ steps.create-course.outputs.qbook_url }}
@@ -80,10 +83,10 @@ runs:
         python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.article-type }}'
 
     - name: Stage 6 - Poll worker service for completion
-      id: poll-worker
+      id: poll-status
       shell: bash
       run: |
-        python ${{ github.action_path }}/src/scripts/poll_worker.py '${{ inputs.api-key }}' '${{ steps.validate-course.outputs.formatted_course_name }}'
+        python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' '${{ steps.create-course.outputs.course_custom_id }}'
 
     - name: Create deployment summary
       if: success()
@@ -95,7 +98,7 @@ runs:
         Your course has been successfully deployed to qBraid!
         
         **Course Name:** ${{ steps.validate-course.outputs.formatted_course_name }}
-        **qBook URL:** ${{ steps.poll-worker.outputs.qbook_url }}
+        **qBook URL:** ${{ steps.poll-status.outputs.qbook_url }}
         
         ## Next Steps
         
@@ -113,7 +116,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-worker.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
             });
           } catch (error) {
             if (error.status === 403) {

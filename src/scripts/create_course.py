@@ -36,23 +36,12 @@ def create_course(api_key, article_type='course'):
         
         # Extract course ID or other info if needed
         response_data = response.json()
-        print(f"API Response: {json.dumps(response_data, indent=2)}")
-
-        # Generate qBook URL
-        # try:
-        #     article_id = response_data['article']['_id']
-        #     # Get the first chapter's ID (file ID)
-        #     first_chapter_id = response_data['article']['content'][0]['_id']
-            
-        #     qbook_url = f"https://qbook.qbraid.com/learn/?article={article_id}&file={first_chapter_id}"
-        #     print(f"qBook URL: {qbook_url}")
-
-        #     # Set output for GitHub Actions
-        #     if 'GITHUB_OUTPUT' in os.environ:
-        #         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-        #             f.write(f"qbook_url={qbook_url}\n")
-        # except (KeyError, IndexError) as e:
-        #     print(f"WARNING: Could not generate qBook URL from response: {e}")
+        # print(f"API Response: {json.dumps(response_data, indent=2)}")
+        course_custom_id = response_data['article']['customId']
+        # Write to GITHUB_OUTPUT if available
+        if 'GITHUB_OUTPUT' in os.environ:
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                f.write(f"course-custom-id={course_custom_id}\n")
         
     except Exception as e:
         print(f"ERROR: Exception during API call: {e}")

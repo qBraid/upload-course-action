@@ -2,23 +2,20 @@ import requests
 import time
 import sys
 import os
-from config import WORKER_BASE_URL
+from config import API_BASE_URL
 
-def poll_worker(api_key, formatted_name):
-    worker_url = WORKER_BASE_URL
+def poll_worker(api_key, course_custom_id):
     
     max_attempts = 60  # Poll for up to 30 minutes (60 * 30 seconds)
     attempt = 0
     error_count = 0
-    
-    print(f"Polling worker service at {worker_url}...")
-    
+
     while attempt < max_attempts:
         attempt += 1
         
         try:
             response = requests.get(
-                f'{worker_url}/learn/files/status/{formatted_name}',
+                f'{API_BASE_URL}/learn/articles/files/status/{course_custom_id}',
                 headers={'Authorization': f'Bearer {api_key}'}
             )
             
@@ -33,11 +30,22 @@ def poll_worker(api_key, formatted_name):
                     if 'GITHUB_OUTPUT' in os.environ:
                         with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
                             f.write(f"qbook_url={qbook_url}\n")
+                if status in data:
+                    status = data['status']
+                    match status:
+                        case 'unprocessed':
+                            print(f"Attempt {attempt}/{max_attempts}: Course files are unprocessed...")
+                        case 'processing':
+                            print(f"Attempt {attempt}/{max_attempts}: Course files are still being processed...")
+                        case 'failed':
+                            print("❌ Course file processing failed. Please check the logs for more details. or contact support. at contact@qbraid.com")
+                            sys.exit(1)
+                        case 'processed':
+                            print("✅ Course processing complete!") 
+                            sys.exit(0)
+                        case _:
+                            print(f"Attempt {attempt}/{max_attempts}: Unknown status '{status}'")
                     
-                    sys.exit(0)
-            elif response.status_code == 202:
-                error_count = 0
-                print(f"Attempt {attempt}/{max_attempts}: Still processing...")
             else:
                 error_count += 1
                 print(f"Attempt {attempt}/{max_attempts}: Received unexpected status code {response.status_code}")
