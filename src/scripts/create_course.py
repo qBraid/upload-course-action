@@ -61,10 +61,14 @@ def create_course(
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python create_course.py <api_key> [article_type]")
+        print("Usage: python create_course.py <api_key> [article_type] [force_duplicate_questions] [repo_read_token] [repo_url] [commit_sha]")
         sys.exit(1)
 
     api_key = sys.argv[1]
     article_type = sys.argv[2] if len(sys.argv) > 2 else "course"
+    force_duplicate_questions = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else True
+    repo_read_token = sys.argv[4] if len(sys.argv) > 4 else None
+    repo_url = sys.argv[5] if len(sys.argv) > 5 else None
+    commit_sha = sys.argv[6] if len(sys.argv) > 6 else None
 
-    create_course(api_key, article_type)
+    create_course(api_key, article_type, force_duplicate_questions, repo_read_token, repo_url, commit_sha)
