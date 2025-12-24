@@ -6,7 +6,7 @@ from config import API_BASE_URL
 
 
 def create_course(
-    api_key, article_type="course", force_duplicate_questions=True, repo_read_token=None, repo_url=None
+    api_key, article_type="course", force_duplicate_questions=True, repo_read_token=None, repo_url=None,commit_sha=None
 ):
     if not os.path.exists("course_data.json"):
         print("ERROR: course_data.json not found. Run validation first.")
@@ -33,6 +33,7 @@ def create_course(
                 "forceDuplicateQuestions": force_duplicate_questions,
                 "repoReadToken": repo_read_token,
                 "repoUrl": repo_url,
+                "commitSha": commit_sha,
             },
             headers={"X-API-Key": api_key},
         )

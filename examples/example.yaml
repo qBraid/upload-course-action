@@ -24,6 +24,9 @@ jobs:
           # Required: Your qBraid API Key (stored in repository secrets)
           api-key: ${{ secrets.QBRAID_API_KEY }}
           
+          # Required: GitHub token with read access to the repository
+          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
+          
           # Optional: Path to your course.json file (defaults to 'course.json')
           course-json-path: './course.json'
           

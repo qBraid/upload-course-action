@@ -9,7 +9,7 @@ This action provides a complete end-to-end solution for deploying courses:
 1.  **Validate API Key** - Verifies your qBraid credentials.
 2.  **Validate course.json** - Ensures the course configuration file has the correct structure.
 3.  **Verify notebooks** - Confirms all referenced notebook files exist.
-4.  **Check image references** - Validates all images referenced in notebooks exist.
+4.  **Check image references** - Validates all images referenced in notebooks exist and are under 1MB.
 5.  **Upload to GCS** - Securely uploads course files using Signed URLs (no GCS keys required).
 6.  **Create course** - Registers the course with qBraid API.
 7.  **Poll for completion** - Waits for course processing to complete.
@@ -43,6 +43,7 @@ jobs:
         uses: courseBuilderNelson/UploadActionRepo@latest
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
+          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Inputs
@@ -50,6 +51,7 @@ jobs:
 | Input | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
 | `api-key` | Your qBraid API key (store in secrets) | **Yes** | N/A |
+| `repo-read-token` | GitHub token with read access to the repository | **Yes** | N/A |
 | `course-json-path` | Path to `course.json` file | No | `course.json` |
 | `source-path` | Directory to upload (relative to root) | No | `.` |
 | `exclude-patterns` | Glob patterns to exclude | No | `.git/**,node_modules/**,.github/**` |
