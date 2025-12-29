@@ -4,7 +4,7 @@ import sys
 import nbformat
 import re
 
-def check_file_size(file_path, max_size_mb=10):
+def check_file_size(file_path, max_size_mb=5):
     """Checks if the file size is within the allowed limit."""
     try:
         size_mb = os.path.getsize(file_path) / (1024 * 1024)

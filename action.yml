@@ -26,9 +26,9 @@ inputs:
     default: 'false'
 
 outputs:
-  formatted_course_name:
-    description: 'Formatted course name used for GCS storage'
-    value: ${{ steps.validate-course.outputs.formatted_course_name }}
+  course_name:
+    description: 'Name of the deployed course'
+    value: ${{ steps.validate-course.outputs.course_name }}
   course-custom-id:
     description: 'Custom ID of the deployed course'
     value: ${{ steps.create-course.outputs.course_custom_id }}
@@ -50,7 +50,7 @@ runs:
       run: |
         pip install -r ${{ github.action_path }}/requirements.txt
 
-    - name: Validate Repo Read Token
+    - name: Validate Repo Read Github Token
       shell: bash
       run: |
         if [[ -z "${{ inputs.repo-read-token }}" ]]; then
@@ -100,7 +100,7 @@ runs:
         
         Your course has been successfully deployed to qBraid!
         
-        **Course Name:** ${{ steps.validate-course.outputs.formatted_course_name }}
+        **Course Name:** ${{ steps.validate-course.outputs.course_name }}
         **qBook URL:** ${{ steps.poll-status.outputs.qbook_url }}
         
         ## Next Steps
@@ -119,7 +119,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.formatted_course_name }}\``
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.course_name }}\``
             });
           } catch (error) {
             if (error.status === 403) {

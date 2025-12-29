@@ -6,8 +6,16 @@ from config import API_BASE_URL
 
 
 def create_course(
-    api_key, article_type="course", force_duplicate_questions=True, repo_read_token=None, repo_url=None,commit_sha=None
+    api_key,
+    article_type="course",
+    force_duplicate_questions=True,
+    repo_read_token=None,
+    repo_url=None,
+    commit_sha=None,
 ):
+    if not repo_read_token or not repo_url or not commit_sha:
+        print("ERROR: repo_read_token, repo_url, and commit_sha must be provided.")
+        sys.exit(1)
     if not os.path.exists("course_data.json"):
         print("ERROR: course_data.json not found. Run validation first.")
         sys.exit(1)
@@ -61,14 +69,25 @@ def create_course(
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python create_course.py <api_key> [article_type] [force_duplicate_questions] [repo_read_token] [repo_url] [commit_sha]")
+        print(
+            "Usage: python create_course.py <api_key> [article_type] [force_duplicate_questions] [repo_read_token] [repo_url] [commit_sha]"
+        )
         sys.exit(1)
 
     api_key = sys.argv[1]
     article_type = sys.argv[2] if len(sys.argv) > 2 else "course"
-    force_duplicate_questions = sys.argv[3].lower() == 'true' if len(sys.argv) > 3 else True
+    force_duplicate_questions = (
+        sys.argv[3].lower() == "true" if len(sys.argv) > 3 else True
+    )
     repo_read_token = sys.argv[4] if len(sys.argv) > 4 else None
     repo_url = sys.argv[5] if len(sys.argv) > 5 else None
     commit_sha = sys.argv[6] if len(sys.argv) > 6 else None
 
-    create_course(api_key, article_type, force_duplicate_questions, repo_read_token, repo_url, commit_sha)
+    create_course(
+        api_key,
+        article_type,
+        force_duplicate_questions,
+        repo_read_token,
+        repo_url,
+        commit_sha,
+    )
