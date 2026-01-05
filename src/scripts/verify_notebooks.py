@@ -25,9 +25,18 @@ def check_nbformat_validity(nb):
 def check_forbidden_patterns(content):
     """Checks for forbidden patterns in the notebook content."""
     forbidden_patterns = [
-        (re.compile(r'token\s*=\s*[\'"][a-zA-Z0-9]+[\'"]'), "Potential API token found"),
-        (re.compile(r'password\s*=\s*[\'"][^\'"]+[\'"]'), "Potential password found"),
-        # Add more patterns as needed
+        # More specific patterns to reduce false positives
+        # Look for actual token/key assignments with realistic values
+        (re.compile(r'(?:api[_-]?key|token|access[_-]?token|auth[_-]?token)\s*[=:]\s*[\'"][a-zA-Z0-9_\-]{20,}[\'"]', re.IGNORECASE), 
+         "Potential API token/key found (long alphanumeric value)"),
+        (re.compile(r'password\s*[=:]\s*[\'"][^\'"]{8,}[\'"]', re.IGNORECASE), 
+         "Potential password found (8+ chars)"),
+        # AWS keys pattern
+        (re.compile(r'(?:AKIA|A3T)[A-Z0-9]{16,}'), 
+         "Potential AWS access key found"),
+        # Private keys
+        (re.compile(r'-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----'), 
+         "Private key found"),
     ]
     errors = []
     for pattern, message in forbidden_patterns:

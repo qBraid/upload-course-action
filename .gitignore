@@ -21,3 +21,6 @@ coverage/
 *.tmp
 .env
 .env.local
+
+# Action temporary files
+course_data.json

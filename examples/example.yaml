@@ -29,17 +29,15 @@ jobs:
           
           # Optional: Path to your course.json file (defaults to 'course.json')
           course-json-path: './course.json'
-          
-          # Optional: Root directory of your course content (defaults to '.')
-          source-path: '.'
-          
-          # Optional: Patterns to exclude from upload
-          exclude-patterns: '.git/**,node_modules/**,.github/**,*.log'
 
-          # Optional: Type of article to create (course or blog)
+          # Optional: Type of article to create (course or blog, defaults to 'course')
           article-type: 'course'
+          
+          # Optional: Whether to force upload duplicate questions (defaults to 'false')
+          force-duplicate-questions: 'false'
 
       - name: Show Output
         run: |
           echo "Course deployed successfully!"
+          echo "Course Name: ${{ steps.publish.outputs.course_name }}"
           echo "Course URL: ${{ steps.publish.outputs.qbook_url }}"
