@@ -27,12 +27,12 @@ def check_forbidden_patterns(content):
     forbidden_patterns = [
         # More specific patterns to reduce false positives
         # Look for actual token/key assignments with realistic values
-        (re.compile(r'(?:api[_-]?key|token|access[_-]?token|auth[_-]?token)\s*[=:]\s*[\'"][a-zA-Z0-9_\-]{20,}[\'"]', re.IGNORECASE), 
+        (re.compile(r'(?:api[_-]?key|token|access[_-]?token|auth[_-]?token)\s*[=:]\s*[\'"][-a-zA-Z0-9_]{20,}[\'"]', re.IGNORECASE), 
          "Potential API token/key found (long alphanumeric value)"),
-        (re.compile(r'password\s*[=:]\s*[\'"][^\'"]{8,}[\'"]', re.IGNORECASE), 
+        (re.compile(r'\bpassword\s*[=:]\s*[\'"][^\'"]{8,}[\'"]', re.IGNORECASE), 
          "Potential password found (8+ chars)"),
-        # AWS keys pattern
-        (re.compile(r'(?:AKIA|A3T)[A-Z0-9]{16,}'), 
+        # AWS keys pattern - AKIA or A3T followed by exactly 16 characters
+        (re.compile(r'(?:AKIA|A3T)[A-Z0-9]{16}'), 
          "Potential AWS access key found"),
         # Private keys
         (re.compile(r'-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----'), 
