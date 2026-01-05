@@ -34,7 +34,7 @@ outputs:
     value: ${{ steps.create-course.outputs.course_custom_id }}
   qbook_url:
     description: 'URL of the deployed course'
-    value: ${{ steps.create-course.outputs.qbook_url }}
+    value: ${{ steps.poll-status.outputs.qbook_url }}
 
 
 runs:
