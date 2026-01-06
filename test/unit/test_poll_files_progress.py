@@ -22,9 +22,6 @@ class TestPollWorker:
             poll_files_progress.poll_worker("key", "id")
         assert e.value.code == 0
         
-        # Verify Github output if needed (check code coverage if desired)
-        # But this test is sufficient to check valid path.
-
     @mock.patch('poll_files_progress.requests.get')
     @mock.patch('poll_files_progress.time.sleep')
     def test_poll_worker_processing_then_success(self, mock_sleep, mock_get):
