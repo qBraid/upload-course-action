@@ -37,7 +37,7 @@ class TestCreateCourse:
 
     def test_create_course_missing_args(self):
         with pytest.raises(SystemExit) as e:
-            create_course.create_course("key", repo_read_token=None) # others are None by default in func def? No, default is None
+            create_course.create_course("key", repo_read_token=None)
         assert e.value.code == 1
 
     @mock.patch('os.path.exists')
