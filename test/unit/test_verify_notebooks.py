@@ -99,13 +99,12 @@ class TestVerifyNotebooks:
     @mock.patch('os.path.exists')
     @mock.patch('verify_notebooks.validate_notebook_content')
     def test_verify_notebooks_missing_file(self, mock_validate, mock_exists, mock_json, mock_open):
-        # Logic: if course_data exists -> True. 
-        # Inside loop: check_file -> os.path.exists(path) -> False
+        # Test that a missing notebook file causes verification to exit with an error.
         mock_json.return_value = {
             'content': [{'baseFilePath': 'nb1.ipynb'}]
         }
         
-        # side_effect for exists: True for course_data.json, False for notebook
+        # Simulate course data file existing but the referenced notebook file missing.
         def side_effect(path):
             if path == 'course_data.json': return True
             return False
