@@ -36,16 +36,7 @@ class TestCheckImages:
     @mock.patch('os.path.exists')
     def test_check_notebook_images_missing(self, mock_exists, mock_open, mock_nb_read):
         """Test with missing images."""
-        # First check is notebook exists -> handled by open. 
-        # But inside valid loop for images.
-        # exists call for absolute path or relative
-        
-        # We need to simulate exists returning False for image paths
-        # But keep in mind exists is also used for checking repo root images? 
-        # check_images.py logic:
-        # if img_ref.startswith('/'): abs_path ... 
-        # else: rel_path ...
-        
+        # Simulate that all referenced image paths do not exist so missing images are reported.
         mock_exists.return_value = False
         
         mock_cell = mock.Mock()
