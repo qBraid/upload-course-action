@@ -15,7 +15,8 @@ def validate_api_key(api_key):
         # The user specified X-API-Key header in the request description
         response = requests.get(
             verify_url,
-            headers={'X-API-Key': api_key}
+            headers={'X-API-Key': api_key},
+            timeout=10  # Add timeout to prevent hanging
         )
         
         if response.status_code == 200:
@@ -36,6 +37,12 @@ def validate_api_key(api_key):
             print(f"Response: {response.text}")
             sys.exit(1)
             
+    except requests.exceptions.Timeout:
+        print("❌ Error: Request timed out. The API is not responding.")
+        sys.exit(1)
+    except requests.exceptions.ConnectionError:
+        print("❌ Error: Could not connect to qBraid API. Please check your network connection.")
+        sys.exit(1)
     except Exception as e:
         print(f"❌ Error: Exception during API key validation: {e}")
         sys.exit(1)

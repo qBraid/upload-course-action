@@ -44,6 +44,7 @@ def create_course(
                 "commitSha": commit_sha,
             },
             headers={"X-API-Key": api_key},
+            timeout=30,  # Add timeout to prevent hanging
         )
 
         if response.status_code != 201:
@@ -62,6 +63,15 @@ def create_course(
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                 f.write(f"course_custom_id={course_custom_id}\n")
 
+    except requests.exceptions.Timeout:
+        print("ERROR: Request timed out. The API is not responding.")
+        sys.exit(1)
+    except requests.exceptions.ConnectionError:
+        print("ERROR: Could not connect to qBraid API. Please check your network connection.")
+        sys.exit(1)
+    except KeyError as e:
+        print(f"ERROR: Unexpected API response format. Missing key: {e}")
+        sys.exit(1)
     except Exception as e:
         print(f"ERROR: Exception during API call: {e}")
         sys.exit(1)

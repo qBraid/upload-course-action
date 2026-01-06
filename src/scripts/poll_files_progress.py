@@ -16,7 +16,8 @@ def poll_worker(api_key, course_custom_id):
         try:
             response = requests.get(
                 f'{API_BASE_URL}/api/v1/learn/articles/files/status/{course_custom_id}',
-                headers={'X-API-Key': api_key} 
+                headers={'X-API-Key': api_key},
+                timeout=15  # Add timeout to prevent hanging
             )
             
             if response.status_code == 200:
@@ -55,6 +56,20 @@ def poll_worker(api_key, course_custom_id):
             
             time.sleep(30)  # Wait 30 seconds between polls
             
+        except requests.exceptions.Timeout:
+            error_count += 1
+            print(f"Attempt {attempt}/{max_attempts}: Request timed out")
+            if error_count > 5:
+                print("ERROR: Too many consecutive timeouts. Terminating.")
+                sys.exit(1)
+            time.sleep(30)
+        except requests.exceptions.ConnectionError:
+            error_count += 1
+            print(f"Attempt {attempt}/{max_attempts}: Connection error")
+            if error_count > 5:
+                print("ERROR: Too many consecutive connection errors. Terminating.")
+                sys.exit(1)
+            time.sleep(30)
         except Exception as e:
             error_count += 1
             print(f"Error polling worker: {e}")

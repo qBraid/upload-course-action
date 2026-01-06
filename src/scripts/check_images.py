@@ -7,6 +7,8 @@ import re
 def check_notebook_images(notebook_path, image_issues):
     """Check all image references in a notebook"""
     notebook_dir = os.path.dirname(notebook_path)
+    if not notebook_dir:  # Handle case where notebook is in root directory
+        notebook_dir = '.'
     MAX_SIZE_MB = 1
     MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024
     

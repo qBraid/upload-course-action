@@ -12,13 +12,13 @@ This repository contains a Composite GitHub Action that validates and uploads co
 
 ### 2. src/scripts/
 Contains the core logic in Python:
+- `config.py`: Configuration for API base URL (supports environment override).
 - `validate_api_key.py`: Verifies the qBraid API key.
-- `validate_course.py`: Validates `course.json` structure.
-- `verify_notebooks.py`: Checks existence of notebook files.
+- `validate_course.py`: Validates `course.json` structure and file sizes.
+- `verify_notebooks.py`: Checks existence and security of notebook files.
 - `check_images.py`: Validates image references in notebooks.
-- `upload_files.py`: Handles file scanning and upload via Signed URLs.
-- `create_course.py`: Calls qBraid API to create the course.
-- `poll_worker.py`: Polls for course processing completion.
+- `create_course.py`: Calls qBraid API to create the course with repository metadata.
+- `poll_files_progress.py`: Polls for course processing completion.
 
 ### 3. requirements.txt
 Python dependencies required by the scripts:
@@ -27,13 +27,17 @@ Python dependencies required by the scripts:
 
 ## Authentication
 
-The action uses a **Signed URL** approach for secure uploads:
+The action integrates with qBraid's API using secure authentication:
 
-1.  **User Authentication**: Users provide a qBraid API key via the `api-key` input.
-2.  **Upload Authorization**: The action requests upload URLs from the qBraid API using the user's API key.
-3.  **Direct Upload**: Files are uploaded directly to Google Cloud Storage using the pre-signed URLs returned by the API.
+1.  **User Authentication**: Users provide a qBraid API key via the `api-key` input (stored in GitHub secrets).
+2.  **Repository Access**: Uses GitHub token (`repo-read-token`) to grant qBraid read access to repository files.
+3.  **API Integration**: Course metadata and repository information are sent to qBraid API, which processes files directly from GitHub.
 
-**Note:** No GCS Service Account Keys are stored or used within this action.
+**Security Notes:**
+- API keys are validated before any operations
+- GitHub tokens are scoped for read-only access
+- Repository URL and commit SHA are sent to enable secure file access
+- No direct file uploads from the action - files are accessed by qBraid from GitHub
 
 ## Development Workflow
 
@@ -48,7 +52,10 @@ The action uses a **Signed URL** approach for secure uploads:
 
 ## Security Considerations
 
-✅ **No Secrets in Action**: The action does not store or require GCS credentials.
+✅ **No Secrets in Action**: The action does not store GCS credentials or other sensitive data.
 ✅ **API Key Validation**: The API key is validated before any operations.
-✅ **Signed URLs**: Uploads are scoped and time-limited by the backend.
-✅ **Input Validation**: All user inputs are validated by the scripts.
+✅ **Secure Repository Access**: Uses GitHub tokens with read-only scope.
+✅ **Input Validation**: All user inputs and file content are validated by the scripts.
+✅ **Content Security**: Notebooks are scanned for XSS vulnerabilities, malicious scripts, and embedded credentials.
+✅ **Size Limits**: Enforces file size limits (5MB for notebooks, 1MB for images).
+✅ **Environment Override**: API base URL can be overridden via `QBRAID_API_BASE_URL` environment variable for testing.

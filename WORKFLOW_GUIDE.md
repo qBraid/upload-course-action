@@ -8,12 +8,11 @@ The action performs the following stages:
 
 1.  **Validate API Key**: Checks if your `QBRAID_API_KEY` is valid.
 2.  **Validate course.json**: Ensures the course configuration file has the correct structure.
-3.  **Verify notebooks**: Confirms all referenced notebook files exist.
-4.  **Check image references**: Validates all images referenced in notebooks exist.
-5.  **Upload to GCS**: Uploads all course files to Google Cloud Storage using secure Signed URLs.
-6.  **Create course**: Registers the course with qBraid API.
-7.  **Poll for completion**: Waits for course processing to complete.
-8.  **Notify**: Sends notification with the deployed course URL.
+3.  **Verify notebooks**: Confirms all referenced notebook files exist and validates security.
+4.  **Check image references**: Validates all images referenced in notebooks exist and are under 1MB.
+5.  **Create course**: Registers the course with qBraid API using repository metadata.
+6.  **Poll for completion**: Waits for course processing to complete.
+7.  **Notify**: Sends notification with the deployed course URL.
 
 ## course.json Structure
 
@@ -21,18 +20,29 @@ Your repository must contain a `course.json` file in the root with the following
 
 ```json
 {
-  "owner_email": "owner@example.com",
-  "course_name": "Your Course Name",
+  "courseName": "Introduction to Quantum Computing",
+  "courseDescription": "A beginner-friendly course on quantum computing fundamentals",
+  "visibility": "public",
+  "imageLink": {
+    "darkLogo": "https://example.com/dark-logo.jpg",
+    "lightLogo": "https://example.com/light-logo.jpg"
+  },
+  "tags": ["quantum computing", "beginner"],
+  "deployedTo": ["qbraid.com"],
   "content": [
     {
-      "kernel_name": "python3",
-      "chapter_name": "Introduction to Python",
-      "file_path": "./chapter1/intro.ipynb",
+      "chapterName": "Introduction to Python",
+      "chapterNumber": 1,
+      "baseFilePath": "./chapter1/intro.ipynb",
+      "kernelName": "python3",
+      "kernelId": "Python 3",
       "sections": [
         {
-          "section_obj": 1,
-          "section_name": "Getting Started",
-          "file_path": "./chapter1/section1/getting_started.ipynb"
+          "sectionNumber": 1.1,
+          "sectionName": "Getting Started",
+          "baseFilePath": "./chapter1/section1/getting_started.ipynb",
+          "kernelName": "python3",
+          "kernelId": "Python 3"
         }
       ]
     }
@@ -40,24 +50,34 @@ Your repository must contain a `course.json` file in the root with the following
 }
 ```
 
-### Required Fields
+### Required Root Fields
 
--   **owner_email** (string): Email address of the course owner
--   **course_name** (string): Name of the course
+-   **courseName** (string): Name of the course
+-   **courseDescription** (string): Brief description of the course
+-   **visibility** (string): Visibility setting (e.g., "public", "private")
+-   **imageLink** (object): Logo URLs for dark and light themes
+    -   **darkLogo** (string): URL for dark theme logo
+    -   **lightLogo** (string): URL for light theme logo
+-   **tags** (array of strings): List of tags for the course
+-   **deployedTo** (array of strings): Deployment targets (allowed: "qbraid.com", "quera.com")
 -   **content** (array): List of chapters
 
 ### Chapter Fields
 
--   **kernel_name** (string): Jupyter kernel to use (e.g., "python3", "qsharp")
--   **chapter_name** (string): Display name for the chapter
--   **file_path** (string): Path to the chapter notebook from repo root
+-   **chapterName** (string): Display name for the chapter
+-   **chapterNumber** (number): Chapter number/order
+-   **baseFilePath** (string): Path to the chapter notebook from repo root (max 5MB)
+-   **kernelName** (string): Jupyter kernel to use (e.g., "python3", "qbraid_python")
+-   **kernelId** (string): Display name for the kernel
 -   **sections** (array, optional): List of sections within the chapter
 
 ### Section Fields
 
--   **section_obj** (number): Section number/identifier
--   **section_name** (string): Display name for the section
--   **file_path** (string): Path to the section notebook from repo root
+-   **sectionNumber** (number): Section number/identifier
+-   **sectionName** (string): Display name for the section
+-   **baseFilePath** (string): Path to the section notebook from repo root (max 5MB)
+-   **kernelName** (string): Jupyter kernel to use
+-   **kernelId** (string): Display name for the kernel
 
 ## Usage
 
