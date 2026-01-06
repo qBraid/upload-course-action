@@ -13,7 +13,7 @@ test-e2e:
 	pytest test/e2e
 
 clean:
-	rm -rf __pycache__
+	find . -type d -name '__pycache__' -exec rm -rf {} +
 	rm -rf .pytest_cache
 	rm -rf .coverage
 	rm -rf htmlcov
