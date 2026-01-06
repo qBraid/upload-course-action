@@ -76,10 +76,6 @@ class TestPollWorker:
         with pytest.raises(SystemExit) as e:
             poll_files_progress.poll_worker("key", "id")
         assert e.value.code == 1
-        # It breaks after > 5 errors. 
-        # Loop starts at error_count=0. 
-        # 1st error -> error_count=1
-        # ...
-        # 6th error -> error_count=6 -> "Too many..." sys.exit(1)
+        # Test that after 6 consecutive connection errors, the function exits with code 1.
         assert mock_get.call_count == 6
 
