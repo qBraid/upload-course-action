@@ -79,15 +79,11 @@ class TestValidateCourse:
         with mock.patch('validate_course.check_file_size') as mock_check_size:
              validate_course.validate_course_json("course.json")
              
-             # Check that course_data.json was written
-             assert mock_file.call_count >= 2 # Read course.json, write course_data.json
+             # Verify that course_data.json is written
+             assert mock_file.call_count >= 2  # Read course.json and write course_data.json
              
-             # Verify write call
-             handle = mock_file()
-             # We can't easily check what was written to course_data.json because json.dump writes chunks often
-             # But we can verify open called with write mode
+             # Verify that course_data.json is opened in write mode for output
              mock_file.assert_any_call("course_data.json", "w")
-
     @mock.patch('builtins.open', new_callable=mock.mock_open)
     @mock.patch('json.load')
     @mock.patch('os.path.exists', return_value=True)
