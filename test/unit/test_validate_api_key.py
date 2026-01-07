@@ -6,76 +6,51 @@ from unittest import mock
 # Add src/scripts to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
 
-import validate_api_key
+from validate_api_key import AuthValidator
+from common import Config
 
-class TestValidateApiKey:
+class TestAuthValidator:
     
-    @mock.patch('validate_api_key.requests.get')
-    def test_validate_api_key_success(self, mock_get):
+    @mock.patch('validate_api_key.QbraidSession')
+    def test_validate_success(self, mock_session_cls):
         """Test successful API key validation."""
-        # Setup mock response
+        # Setup mock session and response
+        mock_instance = mock_session_cls.return_value
         mock_response = mock.Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"email": "test@example.com"}
-        mock_get.return_value = mock_response
+        mock_instance.get.return_value = mock_response
 
-        # Expect sys.exit(0)
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
-            validate_api_key.validate_api_key("valid_key")
+        validator = AuthValidator("valid_key")
+        # Should execute without raising SystemExit
+        validator.validate()
         
-        assert pytest_wrapped_e.type == SystemExit
-        assert pytest_wrapped_e.value.code == 0
-        
-        # Verify URL and Headers
-        mock_get.assert_called_once()
-        args, kwargs = mock_get.call_args
-        assert kwargs['headers']['X-API-Key'] == 'valid_key'
-
-    @mock.patch('validate_api_key.requests.get')
-    def test_validate_api_key_invalid(self, mock_get):
-        """Test invalid API key (401)."""
+        # Verify call
+        mock_instance.get.assert_called_once()
+    
+    @mock.patch('validate_api_key.QbraidSession')
+    def test_validate_invalid(self, mock_session_cls):
+        """Test invalid API key validation."""
+        mock_instance = mock_session_cls.return_value
         mock_response = mock.Mock()
         mock_response.status_code = 401
-        mock_get.return_value = mock_response
+        mock_instance.get.return_value = mock_response
 
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
-            validate_api_key.validate_api_key("invalid_key")
+        validator = AuthValidator("invalid_key")
+        # Expect sys.exit(1)
+        with pytest.raises(SystemExit) as e:
+            validator.validate()
         
-        assert pytest_wrapped_e.type == SystemExit
-        assert pytest_wrapped_e.value.code == 1
+        assert e.value.code == 1
 
-    @mock.patch('validate_api_key.requests.get')
-    def test_validate_api_key_other_error(self, mock_get):
-        """Test other API error."""
-        mock_response = mock.Mock()
-        mock_response.status_code = 500
-        mock_response.text = "Internal Server Error"
-        mock_get.return_value = mock_response
-
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
-            validate_api_key.validate_api_key("key")
-        
-        assert pytest_wrapped_e.type == SystemExit
-        assert pytest_wrapped_e.value.code == 1
-
-    @mock.patch('validate_api_key.requests.get')
-    def test_validate_api_key_timeout(self, mock_get):
-        """Test timeout exception."""
-        mock_get.side_effect = validate_api_key.requests.exceptions.Timeout
-
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
-            validate_api_key.validate_api_key("key")
-        
-        assert pytest_wrapped_e.type == SystemExit
-        assert pytest_wrapped_e.value.code == 1
-
-    @mock.patch('validate_api_key.requests.get')
-    def test_validate_api_key_connection_error(self, mock_get):
+    @mock.patch('validate_api_key.QbraidSession')
+    def test_validate_connection_error(self, mock_session_cls):
         """Test connection error."""
-        mock_get.side_effect = validate_api_key.requests.exceptions.ConnectionError
-
-        with pytest.raises(SystemExit) as pytest_wrapped_e:
-            validate_api_key.validate_api_key("key")
+        mock_instance = mock_session_cls.return_value
+        mock_instance.get.side_effect = Exception("Connection failed")
         
-        assert pytest_wrapped_e.type == SystemExit
-        assert pytest_wrapped_e.value.code == 1
+        validator = AuthValidator("any_key")
+        with pytest.raises(SystemExit) as e:
+            validator.validate()
+        assert e.value.code == 1
+

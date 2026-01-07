@@ -5,17 +5,18 @@ import shutil
 import tempfile
 import pytest
 from unittest import mock
-import nbformat
+from pathlib import Path
 
 # Add src/scripts to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
 
 import validate_api_key
 import validate_course
-import verify_notebooks
-import check_images
 import create_course
 import poll_files_progress
+import check_images
+import verify_notebooks
+from common import Config
 
 class TestActionFlowE2E:
 
@@ -33,14 +34,45 @@ class TestActionFlowE2E:
         shutil.rmtree(self.test_dir)
 
     def create_dummy_notebook(self, filename):
-        nb = nbformat.v4.new_notebook()
-        nb.cells.append(nbformat.v4.new_markdown_cell("Test notebook content"))
-        with open(filename, 'w', encoding='utf-8') as f:
-            nbformat.write(nb, f)
+        nb_content = {
+          "cells": [
+            {
+              "cell_type": "markdown",
+              "metadata": {},
+              "source": [
+                "# Chapter 1"
+              ]
+            }
+          ],
+          "metadata": {
+            "kernelspec": {
+              "display_name": "Python 3",
+              "language": "python",
+              "name": "python3"
+            },
+            "language_info": {
+              "codemirror_mode": {
+                "name": "ipython",
+                "version": 3
+              },
+              "file_extension": ".py",
+              "mimetype": "text/x-python",
+              "name": "python",
+              "nbconvert_exporter": "python",
+              "pygments_lexer": "ipython3",
+              "version": "3.8.5"
+            }
+          },
+          "nbformat": 4,
+          "nbformat_minor": 4
+        }
+        with open(filename, 'w') as f:
+            json.dump(nb_content, f)
 
+    @mock.patch('validate_api_key.QbraidSession')
     @mock.patch('requests.get')
     @mock.patch('requests.post')
-    def test_full_flow(self, mock_post, mock_get):
+    def test_full_flow(self, mock_post, mock_get, mock_qbraid_session):
         # 0. Setup Files
         course_json_content = {
             "courseName": "E2E Test Course",
@@ -60,84 +92,81 @@ class TestActionFlowE2E:
                 }
             ]
         }
-        
+    
         with open("course.json", "w") as f:
             json.dump(course_json_content, f)
-            
+    
         self.create_dummy_notebook("chapter1.ipynb")
+    
+        # Setup Mock Responses for QbraidSession (API Key)
+        mock_session_instance = mock_qbraid_session.return_value
+        mock_verify_resp = mock.Mock()
+        mock_verify_resp.status_code = 200
+        mock_verify_resp.json.return_value = {"email": "test@test.com"}
+        mock_session_instance.get.return_value = mock_verify_resp
+
+        # Setup Mock Responses for requests (Poll & Create)
+        mock_poll_resp = mock.Mock()
+        mock_poll_resp.status_code = 200
+        mock_poll_resp.json.return_value = {"status": "processed", "qbookUrl": "http://qbook.url"}
         
-        # Setup Mock Responses
+        mock_create_resp = mock.Mock()
+        mock_create_resp.status_code = 201
+        mock_create_resp.json.return_value = {"article": {"customId": "course-123"}}
         
-        # Validate API Key Mock
-        mock_response_verify = mock.Mock()
-        mock_response_verify.status_code = 200
-        mock_response_verify.json.return_value = {"email": "test@test.com"}
-        
-        # Poll Status Mock
-        mock_response_poll = mock.Mock()
-        mock_response_poll.status_code = 200
-        mock_response_poll.json.return_value = {"status": "processed", "qbookUrl": "http://qbook.url"}
-
-        # Create Course Mock
-        mock_response_create = mock.Mock()
-        mock_response_create.status_code = 201
-        mock_response_create.json.return_value = {"article": {"customId": "course-123"}}
-
-        # Configure mocks
-        def get_side_effect(url, **kwargs):
-            if "verify" in url:
-                return mock_response_verify
-            if "files/status" in url:
-                return mock_response_poll
-            return mock.Mock(status_code=404)
-            
-        mock_get.side_effect = get_side_effect
-        mock_post.return_value = mock_response_create
-
-
+        mock_get.return_value = mock_poll_resp
+        mock_post.return_value = mock_create_resp
+    
         # --- Step 1: Validate API Key ---
         print("\n--- Step 1: Validate API Key ---")
         try:
-            with pytest.raises(SystemExit) as e:
-                validate_api_key.validate_api_key("fake-api-key")
-            assert e.value.code == 0
-        except pytest.fail.Exception:
-             # validate_api_key calls sys.exit(0) on success
-             pass
+            validate_api_key.validate_api_key("fake-api-key")
+        except SystemExit as e:
+            if e.code != 0:
+                pytest.fail(f"API Key validation failed with code {e.code}")
 
-        # --- Step 2: Validate Course  ---
+        # --- Step 2: Validate Course ---
         print("\n--- Step 2: Validate Course ---")
-        # validate_course prints check_file_size output etc.
-        # It creates course_data.json
-        validate_course.validate_course_json("course.json")
+        try:
+            validate_course.validate_course_json("course.json")
+        except SystemExit as e:
+             if e.code != 0:
+                pytest.fail(f"Course validation failed with code {e.code}")
+            
         assert os.path.exists("course_data.json")
 
         # --- Step 3: Verify Notebooks ---
         print("\n--- Step 3: Verify Notebooks ---")
-        # verify_notebooks reads course_data.json
-        # Calls sys.exit(1) on failure, otherwise prints success
-        verify_notebooks.verify_notebooks()
+        try:
+            verify_notebooks.verify_notebooks()
+        except SystemExit as e:
+            if e.code != 0:
+                pytest.fail(f"Notebook verification failed with code {e.code}")
 
         # --- Step 4: Check Images ---
         print("\n--- Step 4: Check Images ---")
-        # check_images reads course_data.json
-        check_images.verify_images()
+        try:
+            check_images.verify_images()
+        except SystemExit as e:
+            if e.code != 0:
+                pytest.fail(f"Image check failed with code {e.code}")
 
         # --- Step 5: Create Course ---
         print("\n--- Step 5: Create Course ---")
-        # create_course(api_key, article_type, force_duplicate, repo_token, repo_url, commit_sha)
-        create_course.create_course(
-            "fake-api-key", 
-            "course", 
-            True, 
-            "gh-token", 
-            "http://github.com/repo", 
-            "sha123"
-        )
-        
-        # --- Step 6: Poll Status ---
-        print("\n--- Step 6: Poll Status ---")
-        with pytest.raises(SystemExit) as e:
+        try:
+            create_course.create_course("fake-api-key", repo_read_token="token", repo_url="url", commit_sha="sha")
+        except SystemExit as e:
+             if e.code != 0:
+                pytest.fail(f"Create course failed with code {e.code}")
+
+        # --- Step 6: Poll Progress ---
+        print("\n--- Step 6: Poll Progress ---")
+        # To test polling success, we mock check_status to return processed immediately or simulated
+        # But we mocked requests.get above to return 'processed'
+        try:
             poll_files_progress.poll_worker("fake-api-key", "course-123")
-        assert e.value.code == 0
+        except SystemExit as e:
+             if e.code != 0:
+                pytest.fail(f"Polling failed with code {e.code}")
+
 

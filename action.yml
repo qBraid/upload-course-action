@@ -44,11 +44,13 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
 
     - name: Install dependencies
       shell: bash
       run: |
-        pip install -r ${{ github.action_path }}/requirements.txt
+        pip install uv
+        uv pip install --system -r ${{ github.action_path }}/requirements.txt
 
     - name: Validate Repo Read Github Token
       shell: bash
@@ -127,4 +129,20 @@ runs:
             } else {
               core.warning(`Failed to send notification: ${error.message}`);
             }
+          }
+
+    - name: Send failure notification
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          try {
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `❌ **Course Deployment Failed**\n\nThe deployment to qBraid failed. Please check the logs for more details.`
+            });
+          } catch (error) {
+             core.warning(`Failed to send notification: ${error.message}`);
           }
