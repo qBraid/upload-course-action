@@ -39,6 +39,7 @@ class Section(BaseModel):
 class Chapter(BaseModel):
     """Model for course chapters."""
     chapterName: str
+    chapterFileName: str
     baseFilePath: Path
     chapterNumber: float
     kernelName: str

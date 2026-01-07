@@ -10,29 +10,32 @@ from qbraid_core import QbraidSessionV1
 
 logger = setup_logging(__name__)
 
+
 class CourseCreator:
     """Handles course creation on qBraid."""
 
     def __init__(
         self,
         api_key: str,
+        repo_read_token: str,
+        repo_url: str,
+        commit_sha: str,
         article_type: str = "course",
         force_duplicate_questions: bool = True,
-        repo_read_token: Optional[str] = None,
-        repo_url: Optional[str] = None,
-        commit_sha: Optional[str] = None,
     ):
         self.api_key = api_key
         try:
             self.article_type = ArticleType(article_type)
         except ValueError:
-            logger.warning(f"Invalid article type '{article_type}'. Defaulting to 'course'.")
+            logger.warning(
+                f"Invalid article type '{article_type}'. Defaulting to 'course'."
+            )
             self.article_type = ArticleType.COURSE
-            
+
         self.force_duplicate_questions = force_duplicate_questions
         self.repo_read_token = repo_read_token
         self.repo_url = repo_url
-        self.commit_sha = commit_sha,
+        self.commit_sha = commit_sha
         self.session = QbraidSessionV1(api_key=api_key)
         self.session.base_url = Config.API_BASE_URL
 
@@ -40,15 +43,17 @@ class CourseCreator:
         stop=stop_after_attempt(3),
         wait=wait_fixed(2),
         retry=retry_if_exception_type((requests.RequestException,)),
-        reraise=True
+        reraise=True,
     )
-    def post_course(self, url: str, headers: Dict[str, str], payload: Dict[str, Any]) -> requests.Response:
+    def post_course(
+        self, url: str, headers: Dict[str, str], payload: Dict[str, Any]
+    ) -> requests.Response:
         """Post course data with retries."""
         response = self.session.post(
             url,
             data=json.dumps(payload),
             headers=headers,
-            timeout=Config.REQUEST_TIMEOUT_SECONDS
+            timeout=Config.REQUEST_TIMEOUT_SECONDS,
         )
         return response
 
@@ -59,11 +64,15 @@ class CourseCreator:
             ActionError: If creation fails.
         """
         if not self.repo_read_token or not self.repo_url or not self.commit_sha:
-            raise ActionError("repo_read_token, repo_url, and commit_sha must be provided.")
-        
+            raise ActionError(
+                "repo_read_token, repo_url, and commit_sha must be provided."
+            )
+
         course_data_path = Path(Config.COURSE_DATA_FILE_NAME)
         if not course_data_path.exists():
-            raise ActionError(f"{Config.COURSE_DATA_FILE_NAME} not found. Run validation first.")
+            raise ActionError(
+                f"{Config.COURSE_DATA_FILE_NAME} not found. Run validation first."
+            )
 
         try:
             with open(course_data_path, "r") as f:
@@ -81,12 +90,9 @@ class CourseCreator:
                 "forceDuplicateQuestions": self.force_duplicate_questions,
                 "repoReadToken": self.repo_read_token,
                 "repoUrl": self.repo_url,
-                "commitSha": self.commit_sha
+                "commitSha": self.commit_sha,
             }
-            headers = {
-                "X-API-Key": self.api_key,
-                "Content-Type": "application/json"
-            }
+            headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
 
             # Use static method
             response = self.post_course(url, headers, payload)
@@ -111,7 +117,9 @@ class CourseCreator:
                     logger.error(f"Response: {response.text}")
                 except Exception:
                     pass
-                raise ActionError(f"Failed to create course. Status: {response.status_code}")
+                raise ActionError(
+                    f"Failed to create course. Status: {response.status_code}"
+                )
 
         except requests.RequestException as e:
             raise ActionError(f"Network error creating course: {e}")
@@ -121,28 +129,30 @@ class CourseCreator:
                 raise
             raise ActionError(f"Unexpected error creating course: {e}")
 
+
 def create_course(
     api_key: str,
+    repo_read_token: str,
+    repo_url: str,
+    commit_sha: str,
     article_type: str = "course",
     force_duplicate_questions: bool = True,
-    repo_read_token: Optional[str] = None,
-    repo_url: Optional[str] = None,
-    commit_sha: Optional[str] = None,
 ):
     """Wrapper for backwards compatibility."""
     creator = CourseCreator(
-        api_key, 
-        article_type, 
-        force_duplicate_questions, 
-        repo_read_token, 
-        repo_url, 
-        commit_sha
+        api_key,
+        repo_read_token,
+        repo_url,
+        commit_sha,
+        article_type,
+        force_duplicate_questions,
     )
     try:
         creator.run()
     except ActionError as e:
         logger.error(str(e))
         sys.exit(1)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 7:
@@ -155,8 +165,8 @@ if __name__ == "__main__":
     create_course(
         sys.argv[1],
         sys.argv[2],
-        sys.argv[3].lower() == 'true',
+        sys.argv[3],
         sys.argv[4],
         sys.argv[5],
-        sys.argv[6]
+        sys.argv[6].lower() == "true",
     )

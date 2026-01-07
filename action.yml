@@ -85,7 +85,7 @@ runs:
       id: create-course
       shell: bash
       run: |
-        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.article-type }}' '${{ inputs.force-duplicate-questions }}' '${{ inputs.repo-read-token }}' '${{ github.server_url }}/${{ github.repository }}' '${{ github.sha }}'
+        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.repo-read-token }}' '${{ github.server_url }}/${{ github.repository }}' '${{ github.sha }}' '${{ inputs.article-type }}' '${{ inputs.force-duplicate-questions }}'
 
     - name: Stage 6 - Poll status end point for completion
       id: poll-status
