@@ -46,7 +46,7 @@ class CourseCreator:
         """Post course data with retries."""
         response = self.session.post(
             url,
-            json=payload,
+            data=json.dumps(payload),
             headers=headers,
             timeout=Config.REQUEST_TIMEOUT_SECONDS
         )

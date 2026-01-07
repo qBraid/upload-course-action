@@ -23,7 +23,7 @@ def setup_logging(name: str) -> logging.Logger:
 class Config:
     """Application configuration constants."""
     # API Configuration
-    DEFAULT_API_BASE_URL: str = "https://272bb931d824.ngrok-free.app/app1/api/v1"
+    DEFAULT_API_BASE_URL: str = "https://abc2449de5a8.ngrok-free.app/app1/api/v1"
     API_BASE_URL: str = os.getenv("QBRAID_API_BASE_URL", DEFAULT_API_BASE_URL)
     REQUEST_TIMEOUT_SECONDS: int = 15
     MAX_POLL_ATTEMPTS: int = 60
