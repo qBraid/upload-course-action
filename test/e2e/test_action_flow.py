@@ -10,6 +10,17 @@ from pathlib import Path
 # Add src/scripts to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
 
+# Mock QbraidSessionV1 for import
+try:
+    import qbraid_core
+    if not hasattr(qbraid_core, 'QbraidSessionV1'):
+        qbraid_core.QbraidSessionV1 = mock.Mock()
+except ImportError:
+    qbraid_core = mock.Mock()
+    sys.modules['qbraid_core'] = qbraid_core
+    if not hasattr(qbraid_core, 'QbraidSessionV1'):
+        qbraid_core.QbraidSessionV1 = mock.Mock()
+
 import validate_api_key
 import validate_course
 import create_course
@@ -19,60 +30,33 @@ import verify_notebooks
 from common import Config
 
 class TestActionFlowE2E:
-
-    @pytest.fixture(autouse=True)
-    def setup_teardown(self):
-        # Create a temporary directory
-        self.test_dir = tempfile.mkdtemp()
+    
+    def setup_method(self):
         self.old_cwd = os.getcwd()
+        self.test_dir = tempfile.mkdtemp()
         os.chdir(self.test_dir)
         
-        yield
-        
-        # Cleanup
+        # Create dummy image
+        with open("logo.png", "wb") as f:
+            f.write(b"fake_image_data")
+
+    def teardown_method(self):
         os.chdir(self.old_cwd)
         shutil.rmtree(self.test_dir)
 
     def create_dummy_notebook(self, filename):
         nb_content = {
-          "cells": [
-            {
-              "cell_type": "markdown",
-              "metadata": {},
-              "source": [
-                "# Chapter 1"
-              ]
-            }
-          ],
+          "cells": [{"cell_type": "markdown", "metadata": {}, "source": ["# Chapter 1"]}],
           "metadata": {
-            "kernelspec": {
-              "display_name": "Python 3",
-              "language": "python",
-              "name": "python3"
-            },
-            "language_info": {
-              "codemirror_mode": {
-                "name": "ipython",
-                "version": 3
-              },
-              "file_extension": ".py",
-              "mimetype": "text/x-python",
-              "name": "python",
-              "nbconvert_exporter": "python",
-              "pygments_lexer": "ipython3",
-              "version": "3.8.5"
-            }
+            "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+            "language_info": {"name": "python", "version": "3.8.5"}
           },
-          "nbformat": 4,
-          "nbformat_minor": 4
+          "nbformat": 4, "nbformat_minor": 4
         }
         with open(filename, 'w') as f:
             json.dump(nb_content, f)
 
-    @mock.patch('validate_api_key.QbraidSession')
-    @mock.patch('requests.get')
-    @mock.patch('requests.post')
-    def test_full_flow(self, mock_post, mock_get, mock_qbraid_session):
+    def test_full_flow(self):
         # 0. Setup Files
         course_json_content = {
             "courseName": "E2E Test Course",
@@ -84,6 +68,7 @@ class TestActionFlowE2E:
             "content": [
                 {
                     "chapterName": "Chapter 1",
+                    "chapterFileName": "chapter1.ipynb.json",
                     "baseFilePath": "chapter1.ipynb",
                     "chapterNumber": 1,
                     "kernelName": "python3",
@@ -98,24 +83,36 @@ class TestActionFlowE2E:
     
         self.create_dummy_notebook("chapter1.ipynb")
     
-        # Setup Mock Responses for QbraidSession (API Key)
-        mock_session_instance = mock_qbraid_session.return_value
+        # Setup Mock Responses for QbraidSessionV1 (Global Mock)
+        mock_session_cls = qbraid_core.QbraidSessionV1
+        mock_session_instance = mock_session_cls.return_value
+        
+        mock_session_instance.reset_mock()
+        mock_session_cls.reset_mock()
+
+        # Configure GET response (validate_api_key, poll_files_progress)
         mock_verify_resp = mock.Mock()
         mock_verify_resp.status_code = 200
         mock_verify_resp.json.return_value = {"email": "test@test.com"}
-        mock_session_instance.get.return_value = mock_verify_resp
-
-        # Setup Mock Responses for requests (Poll & Create)
+        
         mock_poll_resp = mock.Mock()
         mock_poll_resp.status_code = 200
         mock_poll_resp.json.return_value = {"status": "processed", "qbookUrl": "http://qbook.url"}
-        
+
+        def get_side_effect(*args, **kwargs):
+            url = args[0] if args else kwargs.get('url', '')
+            # Handle both scenarios
+            if 'verify' in str(url):
+                return mock_verify_resp
+            return mock_poll_resp # Default for poll
+
+        mock_session_instance.get.side_effect = get_side_effect
+
+        # Configure POST response (create_course)
         mock_create_resp = mock.Mock()
         mock_create_resp.status_code = 201
         mock_create_resp.json.return_value = {"article": {"customId": "course-123"}}
-        
-        mock_get.return_value = mock_poll_resp
-        mock_post.return_value = mock_create_resp
+        mock_session_instance.post.return_value = mock_create_resp
     
         # --- Step 1: Validate API Key ---
         print("\n--- Step 1: Validate API Key ---")
@@ -161,12 +158,11 @@ class TestActionFlowE2E:
 
         # --- Step 6: Poll Progress ---
         print("\n--- Step 6: Poll Progress ---")
-        # To test polling success, we mock check_status to return processed immediately or simulated
-        # But we mocked requests.get above to return 'processed'
-        try:
-            poll_files_progress.poll_worker("fake-api-key", "course-123")
-        except SystemExit as e:
-             if e.code != 0:
-                pytest.fail(f"Polling failed with code {e.code}")
-
-
+        
+        with mock.patch('poll_files_progress.ProgressPoller.fetch_status') as mock_fetch:
+            mock_fetch.return_value = {"status": "processed", "qbookUrl": "http://qbook.url"}
+            try:
+                poll_files_progress.poll_worker("fake-api-key", "course-123")
+            except SystemExit as e:
+                if e.code != 0:
+                    pytest.fail(f"Polling failed with code {e.code}")

@@ -29,6 +29,7 @@ class TestCourseValidator:
             "content": [
                 {
                     "chapterName": "Ch1",
+                    "chapterFileName": "ch1_file.json",
                     "baseFilePath": "ch1.ipynb",
                     "chapterNumber": 1,
                     "kernelName": "python3",

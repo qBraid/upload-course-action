@@ -15,7 +15,7 @@ def test_config_default():
         else:
             import common
             
-        assert common.Config.API_BASE_URL == "https://c94ea32cc919.ngrok-free.app/app1"
+        assert common.Config.API_BASE_URL == "https://a88fbeaea6af.ngrok-free.app/app1/api/v1"
 
 def test_config_env_override():
     """Test that API_BASE_URL honors environment variable override."""
