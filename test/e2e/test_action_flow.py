@@ -13,13 +13,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../s
 # Mock QbraidSessionV1 for import
 try:
     import qbraid_core
-    if not hasattr(qbraid_core, 'QbraidSessionV1'):
-        qbraid_core.QbraidSessionV1 = mock.Mock()
+    # Always mock QbraidSessionV1 for tests to ensure consistent behavior 
+    # between environments where the package is installed vs missing.
+    qbraid_core.QbraidSessionV1 = mock.Mock()
 except ImportError:
     qbraid_core = mock.Mock()
     sys.modules['qbraid_core'] = qbraid_core
-    if not hasattr(qbraid_core, 'QbraidSessionV1'):
-        qbraid_core.QbraidSessionV1 = mock.Mock()
+    qbraid_core.QbraidSessionV1 = mock.Mock()
 
 import validate_api_key
 import validate_course
