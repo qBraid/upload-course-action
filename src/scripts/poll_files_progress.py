@@ -58,7 +58,7 @@ class ProgressPoller:
         for attempt in range(1, Config.MAX_POLL_ATTEMPTS + 1):
             try:
                 # Use self.class.fetch_status or ProgressPoller.fetch_status if static
-                data = self.fetch_status(self.url, self.headers)
+                data = self.fetch_status()
                 
                 # Check for qBook URL (success indicator)
                 if 'qbookUrl' in data:
