@@ -1,6 +1,6 @@
+import importlib
 import os
 import sys
-import importlib
 from unittest import mock
 
 # Add src/scripts to path

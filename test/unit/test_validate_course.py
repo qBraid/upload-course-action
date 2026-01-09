@@ -1,15 +1,17 @@
+import json
 import os
 import sys
-import json
-import pytest
-from unittest import mock
 from pathlib import Path
+from unittest import mock
+
+import pytest
 
 # Add src/scripts to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
 
-from validate_course import CourseValidator, Course
 from common import Config
+from validate_course import Course, CourseValidator
+
 
 class TestCourseValidator:
     

@@ -1,8 +1,9 @@
+import json
 import os
 import sys
-import pytest
 from unittest import mock
-import json
+
+import pytest
 import requests
 
 # Add src/scripts to path
@@ -19,8 +20,9 @@ except ImportError:
     if not hasattr(qbraid_core, 'QbraidSessionV1'):
         qbraid_core.QbraidSessionV1 = mock.Mock()
 
+from common import ActionError, ArticleType, Config
 from create_course import CourseCreator
-from common import Config, ActionError, ArticleType
+
 
 class TestCourseCreator:
     

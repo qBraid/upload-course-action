@@ -1,10 +1,11 @@
 import json
 import os
-import sys
-import nbformat
 import re
-from typing import List, Dict, Any, Union
-from common import setup_logging, Config
+import sys
+from typing import Any, Dict, List, Union
+
+import nbformat
+from common import Config, setup_logging
 
 logger = setup_logging(__name__)
 

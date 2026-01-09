@@ -1,9 +1,10 @@
-import os
 import logging
+import os
 import sys
 from dataclasses import dataclass
-from typing import Set, Dict, Any, Optional
 from enum import Enum
+from typing import Any, Dict, Optional, Set
+
 
 # Configure Logging
 def setup_logging(name: str) -> logging.Logger:

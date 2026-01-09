@@ -1,8 +1,9 @@
 import os
 import sys
-import pytest
 from unittest import mock
-import requests 
+
+import pytest
+import requests
 
 # Add src/scripts to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
@@ -18,8 +19,9 @@ except ImportError:
     if not hasattr(qbraid_core, 'QbraidSessionV1'):
         qbraid_core.QbraidSessionV1 = mock.Mock()
 
-from poll_files_progress import ProgressPoller
 from common import Config
+from poll_files_progress import ProgressPoller
+
 
 class TestProgressPoller:
 

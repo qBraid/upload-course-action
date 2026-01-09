@@ -1,12 +1,18 @@
+import argparse
 import json
-import requests
-import sys
 import os
-from typing import Optional, Dict, Any
+import re
+import sys
 from pathlib import Path
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
-from common import setup_logging, Config, ActionError, ArticleType
+from typing import Any, Dict, Optional
+from urllib.parse import urlparse
+
+import requests
+from common import (ActionError, ArticleType, Config, ValidationError,
+                    setup_logging)
 from qbraid_core import QbraidSessionV1
+from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
+                      wait_fixed)
 
 logger = setup_logging(__name__)
 
@@ -154,19 +160,177 @@ def create_course(
         sys.exit(1)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 7:
-        logger.error(
-            "Usage: python create_course.py <api_key> <article_type> "
-            "<force_duplicate_questions> <repo_read_token> <repo_url> <commit_sha>"
-        )
-        sys.exit(1)
+def validate_api_key(api_key: str) -> str:
+    """Validate API key is not empty."""
+    if not api_key or not api_key.strip():
+        raise ValidationError("API key cannot be empty")
+    return api_key.strip()
 
-    create_course(
-        sys.argv[1],
-        sys.argv[2],
-        sys.argv[3],
-        sys.argv[4],
-        sys.argv[5],
-        sys.argv[6].lower() == "true",
-    )
+
+def validate_article_type(article_type: str) -> str:
+    """Validate article type is one of the allowed values."""
+    if not article_type or not article_type.strip():
+        raise ValidationError("Article type cannot be empty")
+    article_type = article_type.strip().lower()
+    try:
+        ArticleType(article_type)
+    except ValueError:
+        valid_types = ", ".join([e.value for e in ArticleType])
+        raise ValidationError(
+            f"Invalid article type '{article_type}'. Must be one of: {valid_types}"
+        )
+    return article_type
+
+
+def validate_boolean(value: str) -> bool:
+    """Validate and convert string to boolean."""
+    if not value:
+        raise ValidationError("Boolean value cannot be empty")
+    value_lower = value.strip().lower()
+    if value_lower in ("true", "1", "yes", "on"):
+        return True
+    elif value_lower in ("false", "0", "no", "off"):
+        return False
+    else:
+        raise ValidationError(
+            f"Invalid boolean value '{value}'. Must be one of: true, false, 1, 0, yes, no, on, off"
+        )
+
+
+def validate_repo_token(token: str) -> str:
+    """Validate repository read token is not empty."""
+    if not token or not token.strip():
+        raise ValidationError("Repository read token cannot be empty")
+    return token.strip()
+
+
+def validate_repo_url(url: str) -> str:
+    """Validate repository URL format."""
+    if not url or not url.strip():
+        raise ValidationError("Repository URL cannot be empty")
+    url = url.strip()
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        raise ValidationError(
+            f"Invalid repository URL format '{url}'. Must be a valid URL (e.g., https://github.com/owner/repo)"
+        )
+    if parsed.scheme not in ("http", "https"):
+        raise ValidationError(
+            f"Repository URL must use http or https scheme, got: {parsed.scheme}"
+        )
+    return url
+
+
+def validate_commit_sha(sha: str) -> str:
+    """Validate commit SHA format (should be 40 hex characters for full SHA, or at least 7)."""
+    if not sha or not sha.strip():
+        raise ValidationError("Commit SHA cannot be empty")
+    sha = sha.strip()
+    # Git commit SHA can be 7-40 hex characters
+    if not re.match(r"^[0-9a-fA-F]{7,40}$", sha):
+        raise ValidationError(
+            f"Invalid commit SHA format '{sha}'. Must be 7-40 hexadecimal characters"
+        )
+    return sha
+
+
+if __name__ == "__main__":
+    # Check if we're using positional arguments (backward compatibility)
+    # Positional args: api_key repo_read_token repo_url commit_sha article_type force_duplicate_questions
+    if len(sys.argv) > 1 and not sys.argv[1].startswith("--"):
+        # Using positional arguments (for backward compatibility with action.yml)
+        if len(sys.argv) < 7:
+            logger.error(
+                "Usage: python create_course.py <api_key> <repo_read_token> <repo_url> "
+                "<commit_sha> <article_type> <force_duplicate_questions>"
+            )
+            logger.error(
+                "Or use named arguments: python create_course.py --help"
+            )
+            sys.exit(1)
+
+        try:
+            api_key = validate_api_key(sys.argv[1])
+            repo_read_token = validate_repo_token(sys.argv[2])
+            repo_url = validate_repo_url(sys.argv[3])
+            commit_sha = validate_commit_sha(sys.argv[4])
+            article_type = validate_article_type(sys.argv[5])
+            force_duplicate_questions = validate_boolean(sys.argv[6])
+        except ValidationError as e:
+            logger.error(f"Validation error: {e}")
+            sys.exit(1)
+    else:
+        # Using named arguments (recommended)
+        parser = argparse.ArgumentParser(
+            description="Create a course/article on qBraid",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  python create_course.py --api-key KEY --article-type course --force-duplicate-questions true \\
+      --repo-read-token TOKEN --repo-url https://github.com/owner/repo --commit-sha abc1234
+            """,
+        )
+        parser.add_argument(
+            "--api-key",
+            required=True,
+            type=validate_api_key,
+            help="qBraid API key",
+        )
+        parser.add_argument(
+            "--article-type",
+            required=True,
+            type=validate_article_type,
+            help=f"Article type (one of: {', '.join([e.value for e in ArticleType])})",
+        )
+        parser.add_argument(
+            "--force-duplicate-questions",
+            required=True,
+            type=validate_boolean,
+            help="Force duplicate questions (true/false, 1/0, yes/no, on/off)",
+        )
+        parser.add_argument(
+            "--repo-read-token",
+            required=True,
+            type=validate_repo_token,
+            help="Repository read token",
+        )
+        parser.add_argument(
+            "--repo-url",
+            required=True,
+            type=validate_repo_url,
+            help="Repository URL (e.g., https://github.com/owner/repo)",
+        )
+        parser.add_argument(
+            "--commit-sha",
+            required=True,
+            type=validate_commit_sha,
+            help="Git commit SHA (7-40 hexadecimal characters)",
+        )
+
+        try:
+            args = parser.parse_args()
+            api_key = args.api_key
+            repo_read_token = args.repo_read_token
+            repo_url = args.repo_url
+            commit_sha = args.commit_sha
+            article_type = args.article_type
+            force_duplicate_questions = args.force_duplicate_questions
+        except (ValidationError, argparse.ArgumentError) as e:
+            logger.error(f"Validation error: {e}")
+            sys.exit(1)
+
+    try:
+        create_course(
+            api_key,
+            repo_read_token,
+            repo_url,
+            commit_sha,
+            article_type,
+            force_duplicate_questions,
+        )
+    except KeyboardInterrupt:
+        logger.info("Interrupted by user")
+        sys.exit(130)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        sys.exit(1)

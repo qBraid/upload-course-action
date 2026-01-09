@@ -1,7 +1,8 @@
 import sys
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
+from common import Config, setup_logging
 from qbraid_core import QbraidSessionV1
-from common import setup_logging, Config
 
 logger = setup_logging(__name__)
 

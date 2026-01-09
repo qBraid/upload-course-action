@@ -1,7 +1,8 @@
 import os
 import sys
-import pytest
 from unittest import mock
+
+import pytest
 
 # Add src/scripts to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
@@ -17,8 +18,9 @@ except ImportError:
     if not hasattr(qbraid_core, 'QbraidSessionV1'):
         qbraid_core.QbraidSessionV1 = mock.Mock()
 
-from validate_api_key import AuthValidator
 from common import Config
+from validate_api_key import AuthValidator
+
 
 class TestAuthValidator:
     
