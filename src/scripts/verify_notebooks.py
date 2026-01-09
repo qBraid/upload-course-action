@@ -9,6 +9,7 @@ from common import Config, setup_logging
 
 logger = setup_logging(__name__)
 
+
 class NotebookVerifier:
     """Verifies that all notebook files exist and contain valid and safe content."""
 
@@ -18,23 +19,38 @@ class NotebookVerifier:
         self.forbidden_patterns = [
             # More specific patterns to reduce false positives
             # Look for actual token/key assignments with realistic values
-            (re.compile(r'(?:api[_-]?key|token|access[_-]?token|auth[_-]?token)\s*[=:]\s*[\'"][-a-zA-Z0-9_]{20,}[\'"]', re.IGNORECASE), 
-             "Potential API token/key found (long alphanumeric value)"),
-            (re.compile(r'\bpassword\s*[=:]\s*[\'"][^\'"]{8,}[\'"]', re.IGNORECASE), 
-             "Potential password found (8+ chars)"),
+            (
+                re.compile(
+                    r'(?:api[_-]?key|token|access[_-]?token|auth[_-]?token)\s*[=:]\s*[\'"][-a-zA-Z0-9_]{20,}[\'"]',
+                    re.IGNORECASE,
+                ),
+                "Potential API token/key found (long alphanumeric value)",
+            ),
+            (
+                re.compile(r'\bpassword\s*[=:]\s*[\'"][^\'"]{8,}[\'"]', re.IGNORECASE),
+                "Potential password found (8+ chars)",
+            ),
             # AWS keys pattern - AKIA or A3T followed by exactly 16 characters
-            (re.compile(r'(?:AKIA|A3T)[A-Z0-9]{16}'), 
-             "Potential AWS access key found"),
+            (re.compile(r"(?:AKIA|A3T)[A-Z0-9]{16}"), "Potential AWS access key found"),
             # Private keys
-            (re.compile(r'-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----'), 
-             "Private key found"),
+            (
+                re.compile(r"-----BEGIN (?:RSA |DSA |EC )?PRIVATE KEY-----"),
+                "Private key found",
+            ),
         ]
-        self.script_tag_regex = re.compile(r'<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>', re.IGNORECASE)
-        self.iframe_regex = re.compile(r'<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>', re.IGNORECASE)
-        self.src_attribute_regex = re.compile(r'src\s*=\s*["\'][^"\']*javascript:', re.IGNORECASE)
+        self.script_tag_regex = re.compile(
+            r"<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>", re.IGNORECASE
+        )
+        self.iframe_regex = re.compile(
+            r"<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>", re.IGNORECASE
+        )
+        self.src_attribute_regex = re.compile(
+            r'src\s*=\s*["\'][^"\']*javascript:', re.IGNORECASE
+        )
 
-
-    def check_file_size(self, file_path: str, max_size_mb: int = Config.MAX_NOTEBOOK_SIZE_MB) -> List[str]:
+    def check_file_size(
+        self, file_path: str, max_size_mb: int = Config.MAX_NOTEBOOK_SIZE_MB
+    ) -> List[str]:
         """Checks if the file size is within the allowed limit."""
         try:
             size_mb = os.path.getsize(file_path) / (1024 * 1024)
@@ -74,29 +90,31 @@ class NotebookVerifier:
     def validate_notebook_content(self, file_path: str) -> List[str]:
         """Validates the content of a notebook file for security issues."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 nb = nbformat.read(f, as_version=4)
         except Exception as e:
             return [f"Could not read notebook: {str(e)}"]
 
         errors: List[str] = []
         for idx, cell in enumerate(nb.cells):
-            if cell.cell_type == 'markdown':
+            if cell.cell_type == "markdown":
                 content = cell.source
                 if self.contains_script_tag(content):
                     errors.append(f"Cell {idx+1}: Contains forbidden <script> tag")
                 if self.contains_malicious_iframe(content):
-                    errors.append(f"Cell {idx+1}: Contains forbidden malicious <iframe> tag")
-                
+                    errors.append(
+                        f"Cell {idx+1}: Contains forbidden malicious <iframe> tag"
+                    )
+
                 pattern_errors = self.check_forbidden_patterns(content)
                 for err in pattern_errors:
                     errors.append(f"Cell {idx+1}: {err}")
-                        
+
         size_errors = self.check_file_size(file_path)
         errors.extend(size_errors)
         format_errors = self.check_nbformat_validity(nb)
         errors.extend(format_errors)
-                
+
         return errors
 
     def check_file(self, path: str, context: str) -> None:
@@ -113,22 +131,24 @@ class NotebookVerifier:
         Verifies that all notebook files exist and contain valid and safe content.
         """
         if not os.path.exists(Config.COURSE_DATA_FILE_NAME):
-            logger.error(f"{Config.COURSE_DATA_FILE_NAME} not found. Run validation first.")
+            logger.error(
+                f"{Config.COURSE_DATA_FILE_NAME} not found. Run validation first."
+            )
             sys.exit(1)
 
         try:
-            with open(Config.COURSE_DATA_FILE_NAME, 'r') as f:
+            with open(Config.COURSE_DATA_FILE_NAME, "r") as f:
                 course_data = json.load(f)
         except Exception as e:
             logger.error(f"Failed to load {Config.COURSE_DATA_FILE_NAME}: {e}")
             sys.exit(1)
 
-        for chapter in course_data['content']:
-            self.check_file(chapter['baseFilePath'], "Chapter")
-            
-            if 'sections' in chapter:
-                for section in chapter['sections']:
-                    self.check_file(section['baseFilePath'], "Section")
+        for chapter in course_data["content"]:
+            self.check_file(chapter["baseFilePath"], "Chapter")
+
+            if "sections" in chapter:
+                for section in chapter["sections"]:
+                    self.check_file(section["baseFilePath"], "Section")
 
         failed = False
 
@@ -151,10 +171,12 @@ class NotebookVerifier:
 
         logger.info("✅ All notebook files exist and passed content validation")
 
+
 def verify_notebooks():
     """Wrapper function for backwards compatibility."""
     verifier = NotebookVerifier()
     verifier.run()
+
 
 if __name__ == "__main__":
     verify_notebooks()

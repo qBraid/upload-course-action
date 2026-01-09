@@ -8,11 +8,9 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import requests
-from common import (ActionError, ArticleType, Config, ValidationError,
-                    setup_logging)
+from common import ActionError, ArticleType, Config, ValidationError, setup_logging
 from qbraid_core import QbraidSessionV1
-from tenacity import (retry, retry_if_exception_type, stop_after_attempt,
-                      wait_fixed)
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 logger = setup_logging(__name__)
 
@@ -244,9 +242,7 @@ if __name__ == "__main__":
                 "Usage: python create_course.py <api_key> <repo_read_token> <repo_url> "
                 "<commit_sha> <article_type> <force_duplicate_questions>"
             )
-            logger.error(
-                "Or use named arguments: python create_course.py --help"
-            )
+            logger.error("Or use named arguments: python create_course.py --help")
             sys.exit(1)
 
         try:

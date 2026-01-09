@@ -11,25 +11,29 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 logger = setup_logging(__name__)
 
+
 class ImageLink(BaseModel):
     """Model for image links."""
+
     darkLogo: str
     lightLogo: str
 
+
 class Section(BaseModel):
     """Model for course sections."""
+
     sectionNumber: float
     sectionName: str
     baseFilePath: Path
     kernelName: str
     kernelId: str
 
-    @field_validator('baseFilePath')
+    @field_validator("baseFilePath")
     @classmethod
     def check_file(cls, v: Path) -> Path:
         if not v.exists():
             raise ValueError(f"File not found: {v}")
-        
+
         size_bytes = v.stat().st_size
         max_bytes = Config.MAX_NOTEBOOK_SIZE_MB * 1024 * 1024
         if size_bytes > max_bytes:
@@ -39,8 +43,10 @@ class Section(BaseModel):
             )
         return v
 
+
 class Chapter(BaseModel):
     """Model for course chapters."""
+
     chapterName: str
     chapterFileName: str
     baseFilePath: Path
@@ -49,12 +55,12 @@ class Chapter(BaseModel):
     kernelId: str
     sections: Optional[List[Section]] = []
 
-    @field_validator('baseFilePath')
+    @field_validator("baseFilePath")
     @classmethod
     def check_file(cls, v: Path) -> Path:
         if not v.exists():
             raise ValueError(f"File not found: {v}")
-        
+
         size_bytes = v.stat().st_size
         max_bytes = Config.MAX_NOTEBOOK_SIZE_MB * 1024 * 1024
         if size_bytes > max_bytes:
@@ -64,8 +70,10 @@ class Chapter(BaseModel):
             )
         return v
 
+
 class Course(BaseModel):
     """Model for course configuration."""
+
     courseName: str
     courseDescription: str
     visibility: str
@@ -74,13 +82,16 @@ class Course(BaseModel):
     content: List[Chapter]
     deployedTo: List[str] = Field(..., min_length=1)
 
-    @field_validator('deployedTo')
+    @field_validator("deployedTo")
     @classmethod
     def check_domains(cls, v: List[str]) -> List[str]:
         invalid = [d for d in v if d not in Config.VALID_DOMAINS]
         if invalid:
-            raise ValueError(f"Invalid domains: {set(invalid)}. Allowed: {Config.VALID_DOMAINS}")
+            raise ValueError(
+                f"Invalid domains: {set(invalid)}. Allowed: {Config.VALID_DOMAINS}"
+            )
         return v
+
 
 class CourseValidator:
     """Validates the course.json structure and file sizes."""
@@ -104,11 +115,11 @@ class CourseValidator:
 
             # Validate structure using Pydantic
             course = Course(**course_data)
-        
+
         except ValidationError as e:
             logger.error("Validation failed for course.json")
             for error in e.errors():
-                loc = " -> ".join(str(l) for l in error['loc'])
+                loc = " -> ".join(str(l) for l in error["loc"])
                 logger.error(f"  Field: {loc}")
                 logger.error(f"  Error: {error['msg']}")
             sys.exit(1)
@@ -124,7 +135,7 @@ class CourseValidator:
         # Save course data for next steps
         try:
             with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
-                json.dump(course.model_dump(mode='json'), f)
+                json.dump(course.model_dump(mode="json"), f)
         except IOError as e:
             logger.error(f"Failed to write {Config.COURSE_DATA_FILE_NAME}: {e}")
             sys.exit(1)
@@ -139,9 +150,11 @@ class CourseValidator:
             except IOError as e:
                 logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
 
+
 def validate_course_json(course_file: str):
     validator = CourseValidator(course_file)
     validator.validate()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
