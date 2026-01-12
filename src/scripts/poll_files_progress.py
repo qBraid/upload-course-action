@@ -1,7 +1,7 @@
 # Copyright (C) 2026 qBraid
 
-
 import os
+import subprocess
 import sys
 import time
 from enum import Enum
@@ -84,8 +84,11 @@ class ProgressPoller:
 
                     if "GITHUB_OUTPUT" in os.environ:
                         try:
-                            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                                f.write(f"qbook_url={qbook_url}\n")
+                            subprocess.run(
+                                f'echo "qbook_url={qbook_url}" >> $GITHUB_OUTPUT',
+                                shell=True,
+                            )
+
                         except IOError as e:
                             logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
 
