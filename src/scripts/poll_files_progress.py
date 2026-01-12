@@ -69,9 +69,10 @@ class ProgressPoller:
         Polls the status of course file processing.
         Raises:
             ActionError: On polling errors or retry exhaustion.
-            WorkerProcessingError: When course processing fails.
             PollTimeoutError: When polling times out.
-            SystemExit: On success (exit code 0).
+        Exits:
+            SystemExit(0): On successful processing.
+            SystemExit(1): When course processing fails.
         """
         for attempt in range(1, Config.MAX_POLL_ATTEMPTS + 1):
             try:
@@ -97,9 +98,10 @@ class ProgressPoller:
                     logger.info("✅ Course processing complete!")
                     sys.exit(0)
                 elif status == ProcessingStatus.FAILED:
-                    raise WorkerProcessingError(
+                    logger.error(
                         "Course file processing failed. Please check the logs or contact contact@qbraid.com"
                     )
+                    sys.exit(1)
                 elif status == ProcessingStatus.UNPROCESSED:
                     logger.info(
                         f"Attempt {attempt}/{Config.MAX_POLL_ATTEMPTS}: Course files are unprocessed..."
@@ -116,9 +118,6 @@ class ProgressPoller:
             except RetryError:
                 logger.error("Too many consecutive errors polling worker.")
                 raise ActionError("Too many consecutive errors polling worker.")
-            except WorkerProcessingError as e:
-                logger.error(str(e))
-                raise
             except Exception as e:
                 # If it's already an ActionError, re-raise it
                 if isinstance(e, ActionError):
