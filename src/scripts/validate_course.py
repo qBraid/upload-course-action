@@ -1,135 +1,163 @@
+# Copyright (C) 2026 qBraid
+
+
 import json
-import sys
 import os
-import re
+import sys
+from pathlib import Path
+from typing import Dict, List, Optional
+
+from common import Config
+from common import ValidationError as ActionValidationError
+from common import setup_logging
+from pydantic import BaseModel, Field, ValidationError, field_validator
+
+logger = setup_logging(__name__)
 
 
-def check_file_size(file_path, context):
-    limit_mb = 5  # 5MB limit
-    limit_bytes = limit_mb * 1024 * 1024
-    if os.path.exists(file_path):
-        size = os.path.getsize(file_path)
-        if size > limit_bytes:
-            print(
-                f"ERROR: {context} file '{file_path}' exceeds {limit_mb}MB limit ({size/1024/1024:.2f}MB)"
+class ImageLink(BaseModel):
+    """Model for image links."""
+
+    darkLogo: str
+    lightLogo: str
+
+
+class Section(BaseModel):
+    """Model for course sections."""
+
+    sectionNumber: float
+    sectionName: str
+    baseFilePath: Path
+    kernelName: str
+    kernelId: str
+
+    @field_validator("baseFilePath")
+    @classmethod
+    def check_file(cls, v: Path) -> Path:
+        if not v.exists():
+            raise ValueError(f"File not found: {v}")
+
+        size_bytes = v.stat().st_size
+        max_bytes = Config.MAX_NOTEBOOK_SIZE_MB * 1024 * 1024
+        if size_bytes > max_bytes:
+            raise ValueError(
+                f"File {v} exceeds {Config.MAX_NOTEBOOK_SIZE_MB}MB limit "
+                f"({size_bytes/1024/1024:.2f}MB)"
             )
-            sys.exit(1)
+        return v
 
 
-def validate_course_json(course_file):
-    if not os.path.exists(course_file):
-        print(f"ERROR: {course_file} not found in repository root")
-        sys.exit(1)
+class Chapter(BaseModel):
+    """Model for course chapters."""
 
-    with open(course_file, "r") as f:
-        course_data = json.load(f)
+    chapterName: str
+    chapterFileName: str
+    baseFilePath: Path
+    chapterNumber: float
+    kernelName: str
+    kernelId: str
+    sections: Optional[List[Section]] = []
 
-    # Validate structure
-    required_fields = [
-        "courseName",
-        "courseDescription",
-        "visibility",
-        "imageLink",
-        "tags",
-        "content",
-        "deployedTo",
-    ]
-    for field in required_fields:
-        if field not in course_data:
-            print(f"ERROR: Missing required field: {field}")
-            sys.exit(1)
+    @field_validator("baseFilePath")
+    @classmethod
+    def check_file(cls, v: Path) -> Path:
+        if not v.exists():
+            raise ValueError(f"File not found: {v}")
 
-    # Validate imageLink structure
-    if not isinstance(course_data["imageLink"], dict):
-        print("ERROR: 'imageLink' must be an object")
-        sys.exit(1)
-    if (
-        "darkLogo" not in course_data["imageLink"]
-        or "lightLogo" not in course_data["imageLink"]
-    ):
-        print("ERROR: 'imageLink' must contain 'darkLogo' and 'lightLogo'")
-        sys.exit(1)
-
-    # Validate content structure
-    if not isinstance(course_data["content"], list):
-        print("ERROR: 'content' must be a list of chapters")
-        sys.exit(1)
-
-    if not isinstance(course_data["deployedTo"], list):
-        print("ERROR: 'deployedTo' must be a list")
-        sys.exit(1)
-
-    if len(course_data["deployedTo"]) == 0:
-        print("ERROR: 'deployedTo' must contain at least one deployment target")
-        sys.exit(1)
-
-    valid_domains = {"qbraid.com", "quera.com"}
-    for domain in course_data["deployedTo"]:
-        if domain not in valid_domains:
-            print(
-                f"ERROR: Invalid domain '{domain}' in 'deployedTo'. Allowed domains are: {', '.join(valid_domains)}"
+        size_bytes = v.stat().st_size
+        max_bytes = Config.MAX_NOTEBOOK_SIZE_MB * 1024 * 1024
+        if size_bytes > max_bytes:
+            raise ValueError(
+                f"File {v} exceeds {Config.MAX_NOTEBOOK_SIZE_MB}MB limit "
+                f"({size_bytes/1024/1024:.2f}MB)"
             )
+        return v
+
+
+class Course(BaseModel):
+    """Model for course configuration."""
+
+    courseName: str
+    courseDescription: str
+    visibility: str
+    imageLink: ImageLink
+    tags: List[str]
+    content: List[Chapter]
+    deployedTo: List[str] = Field(..., min_length=1)
+
+    @field_validator("deployedTo")
+    @classmethod
+    def check_domains(cls, v: List[str]) -> List[str]:
+        invalid = [d for d in v if d not in Config.VALID_DOMAINS]
+        if invalid:
+            raise ValueError(
+                f"Invalid domains: {set(invalid)}. Allowed: {Config.VALID_DOMAINS}"
+            )
+        return v
+
+
+class CourseValidator:
+    """Validates the course.json structure and file sizes."""
+
+    def __init__(self, course_file: str):
+        self.course_file = Path(course_file)
+
+    def validate(self) -> None:
+        """
+        Executes the validation process.
+        Raises:
+            SystemExit: If validation fails.
+        """
+        if not self.course_file.exists():
+            logger.error(f"{self.course_file} not found in repository root")
             sys.exit(1)
 
-    for idx, chapter in enumerate(course_data["content"]):
-        required_chapter_fields = [
-            "chapterName",
-            "baseFilePath",
-            "chapterNumber",
-            "kernelName",
-            "kernelId",
-        ]
-        for field in required_chapter_fields:
-            if field not in chapter:
-                print(f"ERROR: Chapter {idx} missing '{field}'")
-                sys.exit(1)
+        try:
+            with open(self.course_file, "r") as f:
+                course_data = json.load(f)
 
-        # Check chapter file size
-        check_file_size(chapter["baseFilePath"], f"Chapter {idx}")
+            # Validate structure using Pydantic
+            course = Course(**course_data)
 
-        # Check for sections if present
-        if "sections" in chapter:
-            if not isinstance(chapter["sections"], list):
-                print(f"ERROR: Chapter {idx} 'sections' must be a list")
-                sys.exit(1)
-            for section_idx, section in enumerate(chapter["sections"]):
-                required_section_fields = [
-                    "sectionNumber",
-                    "sectionName",
-                    "baseFilePath",
-                    "kernelName",
-                    "kernelId",
-                ]
-                for field in required_section_fields:
-                    if field not in section:
-                        print(
-                            f"ERROR: Chapter {idx}, Section {section_idx} missing '{field}'"
-                        )
-                        sys.exit(1)
+        except ValidationError as e:
+            logger.error("Validation failed for course.json")
+            for error in e.errors():
+                loc = " -> ".join(str(l) for l in error["loc"])
+                logger.error(f"  Field: {loc}")
+                logger.error(f"  Error: {error['msg']}")
+            sys.exit(1)
+        except json.JSONDecodeError:
+            logger.error(f"{self.course_file} is not a valid JSON file")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Unexpected error validating course: {e}")
+            sys.exit(1)
 
-                # Check section file size
-                check_file_size(
-                    section["baseFilePath"], f"Chapter {idx}, Section {section_idx}"
-                )
+        logger.info("✅ course.json structure and file sizes are valid")
 
-    print("✅ course.json structure is valid")
+        # Save course data for next steps
+        try:
+            with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
+                json.dump(course.model_dump(mode="json"), f)
+        except IOError as e:
+            logger.error(f"Failed to write {Config.COURSE_DATA_FILE_NAME}: {e}")
+            sys.exit(1)
 
-    # Save course data for next steps
-    with open("course_data.json", "w") as f:
-        json.dump(course_data, f)
+        course_name = course.courseName
+        logger.info(f"Course Name={course_name}")
 
-    course_name = course_data["courseName"]
+        from common import write_github_output
 
-    print(f"Course Name={course_name}")
+        write_github_output("course_name", str(course_name))
 
-    # Write to GITHUB_OUTPUT if available
-    if "GITHUB_OUTPUT" in os.environ:
-        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-            f.write(f"course_name={course_name}\n")
+
+def validate_course_json(course_file: str):
+    validator = CourseValidator(course_file)
+    validator.validate()
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python validate_course.py <course_json_path>")
+        logger.error("Usage: python validate_course.py <course_json_path>")
         sys.exit(1)
     validate_course_json(sys.argv[1])

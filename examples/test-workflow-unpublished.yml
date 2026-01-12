@@ -1,13 +1,12 @@
-# Example workflow for deploying a course to qBraid
-# Copy this to your repository as .github/workflows/deploy.yml
+# Example workflow for testing the action BEFORE it's published to marketplace
+# Copy this to your test repository as .github/workflows/deploy.yml
 
 name: Deploy Course to qBraid
 
 on:
+  workflow_dispatch:  # Allows manual triggering for testing
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main, test ]
 
 permissions:
   contents: write
@@ -21,6 +20,11 @@ jobs:
 
       - name: Deploy to qBraid
         id: deploy
+        # Reference the action from source repository (not marketplace)
+        # Options:
+        #   @main - uses the main branch (good for testing latest changes)
+        #   @abc123def456 - uses a specific commit SHA (most stable)
+        #   @v0.1.0 - uses a specific tag (recommended for production)
         uses: courseBuilderNelson/UploadActionRepo@v0.1.0
         with:
           # Required: Your qBraid API Key (stored in repository secrets)
@@ -31,14 +35,14 @@ jobs:
           
           # Optional: Path to your course.json file (defaults to 'course.json')
           course-json-path: 'course.json'
-
+          
           # Optional: Type of article to create (course or blog, defaults to 'course')
           article-type: 'course'
           
           # Optional: Whether to force upload duplicate questions (defaults to 'false')
           force-duplicate-questions: 'false'
 
-      - name: Show deployment results
+      - name: Show Results
         if: success()
         run: |
           echo "✅ Course deployed successfully!"

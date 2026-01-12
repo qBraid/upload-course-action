@@ -10,18 +10,8 @@ inputs:
     description: 'Path to course.json file'
     required: false
     default: 'course.json'
-  api-key:
-    description: 'qBraid API key for authentication'
-    required: true
-  repo-read-token:
-    description: 'GitHub token with read access to the repository'
-    required: true
-  article-type:
-    description: 'Type of article to create (course or blog)'
-    required: false
-    default: 'course'
-  force-duplicate-questions:
-    description: 'Whether to force upload duplicate questions (true or false)'
+  draft:
+    description: 'Whether to create a draft course (true or false)'
     required: false
     default: 'false'
 
@@ -40,6 +30,11 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -48,7 +43,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        pip install -r ${{ github.action_path }}/requirements.txt
+        uv pip install --system -e ${{ github.action_path }}
 
     - name: Validate Repo Read Github Token
       shell: bash
@@ -83,7 +78,7 @@ runs:
       id: create-course
       shell: bash
       run: |
-        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.article-type }}' '${{ inputs.force-duplicate-questions }}' '${{ inputs.repo-read-token }}' '${{ github.server_url }}/${{ github.repository }}' '${{ github.sha }}'
+        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.repo-read-token }}' '${{ github.server_url }}/${{ github.repository }}' '${{ github.sha }}' '${{ inputs.article-type }}' '${{ inputs.force-duplicate-questions }}'
 
     - name: Stage 6 - Poll status end point for completion
       id: poll-status
@@ -127,4 +122,20 @@ runs:
             } else {
               core.warning(`Failed to send notification: ${error.message}`);
             }
+          }
+
+    - name: Send failure notification
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          try {
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: `❌ **Course Deployment Failed**\n\nThe deployment to qBraid failed. Please check the logs for more details.`
+            });
+          } catch (error) {
+             core.warning(`Failed to send notification: ${error.message}`);
           }

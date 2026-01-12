@@ -1,0 +1,51 @@
+# Example workflow for testing with `act` and local API
+# This is the EASIEST way to test with a local API
+# 
+# Usage:
+#   1. Start your local API (e.g., on localhost:3001)
+#   2. Create .secrets file with:
+#        QBRAID_API_KEY=your_key
+#        GITHUB_TOKEN=your_github_token (if action repo is private)
+#   3. Run: act workflow_dispatch -W .github/workflows/test-act.yml --secret-file .secrets
+#
+# If the action repository is PRIVATE, you need to authenticate:
+#   - Create a GitHub Personal Access Token (PAT) with 'repo' scope
+#   - Run: GITHUB_TOKEN=ghp_your_token act workflow_dispatch --secret-file .secrets
+#   - Or add GITHUB_TOKEN to your .secrets file
+
+name: Test with Act and Local API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      # Note: This workflow is designed for local testing with 'act'
+      # It uses './' to reference the local action, which only works with act
+
+      - name: Deploy to qBraid (Local API via act)
+        id: deploy
+        env:
+          # Point to your local API - act runs locally so localhost works!
+          QBRAID_API_BASE_URL: "http://localhost:3001"
+        uses: ./
+        with:
+          api-key: ${{ secrets.QBRAID_API_KEY }}
+          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
+          course-json-path: 'course.json'
+          article-type: 'course'
+
+      - name: Show Results
+        if: success()
+        run: |
+          echo "✅ Successfully tested with local API!"
+          echo "Course Name: ${{ steps.deploy.outputs.course_name }}"
+          echo "Course URL: ${{ steps.deploy.outputs.qbook_url }}"

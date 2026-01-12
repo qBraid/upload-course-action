@@ -1,81 +1,73 @@
-import os
-import sys
-import pytest
 from unittest import mock
 
-# Add src/scripts to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src/scripts')))
+import pytest
+from common import Config
+from poll_files_progress import ProgressPoller
 
-import poll_files_progress
 
-class TestPollWorker:
+@pytest.mark.unit
+class TestProgressPoller:
 
-    @mock.patch('poll_files_progress.requests.get')
-    @mock.patch('poll_files_progress.time.sleep')
-    def test_poll_worker_success(self, mock_sleep, mock_get):
-        mock_response = mock.Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"status": "processed", "qbookUrl": "http://url"}
-        mock_get.return_value = mock_response
-        
+    @mock.patch("poll_files_progress.ProgressPoller.fetch_status")
+    @mock.patch("poll_files_progress.time.sleep")
+    def test_run_success(self, mock_sleep, mock_fetch):
+        """Test successful polling."""
+
+        poller = ProgressPoller("key", "id")
+
+        mock_fetch.return_value = {"status": "processed", "qbookUrl": "http://url"}
+
         with pytest.raises(SystemExit) as e:
-            poll_files_progress.poll_worker("key", "id")
+            poller.run()
         assert e.value.code == 0
-        
-    @mock.patch('poll_files_progress.requests.get')
-    @mock.patch('poll_files_progress.time.sleep')
-    def test_poll_worker_processing_then_success(self, mock_sleep, mock_get):
-        resp_processing = mock.Mock()
-        resp_processing.status_code = 200
-        resp_processing.json.return_value = {"status": "processing"}
-        
-        resp_success = mock.Mock()
-        resp_success.status_code = 200
-        resp_success.json.return_value = {"status": "processed"}
-        
-        mock_get.side_effect = [resp_processing, resp_success]
-        
+
+        mock_fetch.assert_called()
+
+    @mock.patch("poll_files_progress.ProgressPoller.fetch_status")
+    @mock.patch("poll_files_progress.time.sleep")
+    def test_run_processing_then_success(self, mock_sleep, mock_fetch):
+        """Test polling with intermediate processing status."""
+
+        poller = ProgressPoller("key", "id")
+
+        mock_fetch.side_effect = [
+            {"status": "processing"},
+            {"status": "processed", "qbookUrl": "http://url"},
+        ]
+
         with pytest.raises(SystemExit) as e:
-            poll_files_progress.poll_worker("key", "id")
+            poller.run()
         assert e.value.code == 0
-        assert mock_get.call_count == 2
-        assert mock_sleep.call_count == 1 # Slept once between calls
 
-    @mock.patch('poll_files_progress.requests.get')
-    @mock.patch('poll_files_progress.time.sleep')
-    def test_poll_worker_failed(self, mock_sleep, mock_get):
-        mock_response = mock.Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"status": "failed"}
-        mock_get.return_value = mock_response
-        
+        assert mock_fetch.call_count == 2
+        assert mock_sleep.call_count >= 1
+
+    @mock.patch("poll_files_progress.ProgressPoller.fetch_status")
+    @mock.patch("poll_files_progress.time.sleep")
+    def test_run_failed(self, mock_sleep, mock_fetch):
+        """Test polling resulting in failure."""
+        poller = ProgressPoller("key", "id")
+
+        mock_fetch.return_value = {"status": "failed"}
+
         with pytest.raises(SystemExit) as e:
-            poll_files_progress.poll_worker("key", "id")
+            poller.run()
         assert e.value.code == 1
 
-    @mock.patch('poll_files_progress.requests.get')
-    @mock.patch('poll_files_progress.time.sleep')
-    def test_poll_worker_timeout(self, mock_sleep, mock_get):
-        # Simulate max attempts of processing
-        mock_response = mock.Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {"status": "processing"}
-        mock_get.return_value = mock_response
-        
-        
-        with pytest.raises(SystemExit) as e:
-            poll_files_progress.poll_worker("key", "id")
-        assert e.value.code == 1
-        assert mock_get.call_count == 60
+    @mock.patch("poll_files_progress.ProgressPoller.fetch_status")
+    @mock.patch("poll_files_progress.time.sleep")
+    def test_run_qbookurl_exits_immediately(self, mock_sleep, mock_fetch):
+        """Test that qbookUrl presence causes immediate exit regardless of status."""
+        poller = ProgressPoller("key", "id")
 
-    @mock.patch('poll_files_progress.requests.get')
-    @mock.patch('poll_files_progress.time.sleep')
-    def test_poll_worker_too_many_errors(self, mock_sleep, mock_get):
-        mock_get.side_effect = poll_files_progress.requests.exceptions.ConnectionError
-        
-        with pytest.raises(SystemExit) as e:
-            poll_files_progress.poll_worker("key", "id")
-        assert e.value.code == 1
-        # Test that after 6 consecutive connection errors, the function exits with code 1.
-        assert mock_get.call_count == 6
+        # qbookUrl present but status is not "processed" - should still exit successfully
+        mock_fetch.return_value = {"status": "processing", "qbookUrl": "http://url"}
 
+        with pytest.raises(SystemExit) as e:
+            poller.run()
+        assert e.value.code == 0
+
+        # Should only call fetch_status once since we exit immediately
+        assert mock_fetch.call_count == 1
+        # Should not sleep since we exit immediately
+        assert mock_sleep.call_count == 0

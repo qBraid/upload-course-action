@@ -97,7 +97,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: courseBuilderNelson/UploadActionRepo@main
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
@@ -116,7 +116,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: courseBuilderNelson/UploadActionRepo@main
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}

@@ -1,0 +1,31 @@
+# Copyright (C) 2026 qBraid
+
+
+name: Format
+
+on:
+  pull_request:
+    branches: ['main']
+    types: [opened, reopened, ready_for_review, synchronize]
+
+jobs:
+  check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Set up Python
+      run: uv python install
+
+    - name: Install dependencies
+      run: uv sync --extra dev
+
+    - name: Check isort, pylint, black, headers
+      run: uv run make format-check

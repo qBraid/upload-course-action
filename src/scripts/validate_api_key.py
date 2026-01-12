@@ -1,55 +1,66 @@
-import requests
-import sys
-import json
-from config import API_BASE_URL
+# Copyright (C) 2026 qBraid
 
-def validate_api_key(api_key):
-    """
-    Validate the qBraid API key using the verification endpoint.
-    """
-    verify_url = f'{API_BASE_URL}/api/v1/users/verify'
-    
-    print(f"Validating API key against {verify_url}...")
-    
-    try:
-        # The user specified X-API-Key header in the request description
-        response = requests.get(
-            verify_url,
-            headers={'X-API-Key': api_key},
-            timeout=10  # Add timeout to prevent hanging
-        )
-        
-        if response.status_code == 200:
-            print("✅ API key is valid.")
-            try:
-                user_data = response.json()
-                # Print user info if available, but be careful not to log sensitive data
-                if 'email' in user_data:
-                    print(f"Authenticated as: {user_data['email']}")
-            except:
-                pass
-            sys.exit(0)
-        elif response.status_code == 401:
-            print("❌ Error: Invalid API key. Please check your QBRAID_API_KEY secret.")
-            sys.exit(1)
-        else:
-            print(f"❌ Error: API key validation failed with status code {response.status_code}")
-            print(f"Response: {response.text}")
-            sys.exit(1)
-            
-    except requests.exceptions.Timeout:
-        print("❌ Error: Request timed out. The API is not responding.")
+
+import sys
+from typing import Any, Dict, Optional
+
+from common import Config, setup_logging
+from qbraid_core import QbraidSessionV1
+
+logger = setup_logging(__name__)
+
+
+class AuthValidator:
+    """Validates the qBraid API key."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    def validate(self) -> None:
+        """
+        Validate the qBraid API key using the verification endpoint.
+
+        Raises:
+            SystemExit: If validation fails.
+        """
+
+        try:
+            # Use qbraid-core session for authentication
+            session = QbraidSessionV1(api_key=self.api_key)
+            session.base_url = Config.API_BASE_URL
+            response = session.get(
+                "/users/verify", timeout=Config.REQUEST_TIMEOUT_SECONDS
+            )
+
+            if response.status_code == 200:
+                logger.info("✅ API key is valid.")
+                try:
+                    user_data: Dict[str, Any] = response.json()
+                    # Print user info if available
+                    if "email" in user_data:
+                        logger.info(f"Authenticated as: {user_data['email']}")
+                except Exception:
+                    pass
+                # Success
+                return
+            elif response.status_code == 401:
+                logger.error("❌ Error: Invalid API key.")
+            else:
+                logger.error(f"❌ Error: Unexpected status code {response.status_code}")
+
+        except Exception as e:
+            logger.error(f"❌ Error: Exception during API key validation: {e}")
+
         sys.exit(1)
-    except requests.exceptions.ConnectionError:
-        print("❌ Error: Could not connect to qBraid API. Please check your network connection.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error: Exception during API key validation: {e}")
-        sys.exit(1)
+
+
+def validate_api_key(api_key: str):
+    validator = AuthValidator(api_key)
+    validator.validate()
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python validate_api_key.py <api_key>")
+        logger.error("Usage: python validate_api_key.py <api_key>")
         sys.exit(1)
-    
     validate_api_key(sys.argv[1])

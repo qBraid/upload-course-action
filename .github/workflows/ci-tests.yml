@@ -2,27 +2,69 @@ name: Run Tests
 
 on:
   push:
-    branches: [ "main", "master", "action-tests" ]
+    branches: [ "main",  "action-tests" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
+    - uses: actions/checkout@v6
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
       with:
-        python-version: '3.11'
-        
+        enable-cache: true
+
+    - name: Set up Python
+      run: uv python install
+
     - name: Install dependencies
+      run: uv sync --extra test
+
+    - name: Run tests with coverage
+      id: tests
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-test.txt
+        uv run make test-coverage | tee test-output.txt
         
-    - name: Run tests
-      run: make test
+    - name: Display coverage summary
+      if: always()
+      run: |
+        echo "## 📊 Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f test-output.txt ]; then
+          # Extract and display the full coverage table
+          echo "### Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Find the coverage table section
+          awk '/^Name.*Stmts.*Miss.*Cover/,/^TOTAL/' test-output.txt >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract total coverage percentage
+          TOTAL_COVERAGE=$(grep "^TOTAL" test-output.txt | awk '{print $NF}' | sed 's/%//' || echo "")
+          if [ -n "$TOTAL_COVERAGE" ]; then
+            echo "### Overall Coverage: **${TOTAL_COVERAGE}%**" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+        
+        # Also parse coverage.xml if available for more accurate data
+        if [ -f coverage.xml ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Detailed Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "View the full HTML report in the artifacts below." >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Upload coverage
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: |
+          htmlcov/
+          coverage.xml
+        retention-days: 7
+  
