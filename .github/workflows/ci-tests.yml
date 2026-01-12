@@ -24,9 +24,39 @@ jobs:
     - name: Install dependencies
       run: uv sync --extra test
 
-    - name: Run tests
+    - name: Run tests with coverage
+      id: tests
       run: |
-        uv run make test-coverage
+        uv run make test-coverage | tee test-output.txt
+        
+    - name: Display coverage summary
+      if: always()
+      run: |
+        echo "## 📊 Test Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -f test-output.txt ]; then
+          # Extract and display the full coverage table
+          echo "### Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # Find the coverage table section
+          awk '/^Name.*Stmts.*Miss.*Cover/,/^TOTAL/' test-output.txt >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract total coverage percentage
+          TOTAL_COVERAGE=$(grep "^TOTAL" test-output.txt | awk '{print $NF}' | sed 's/%//' || echo "")
+          if [ -n "$TOTAL_COVERAGE" ]; then
+            echo "### Overall Coverage: **${TOTAL_COVERAGE}%**" >> $GITHUB_STEP_SUMMARY
+          fi
+        fi
+        
+        # Also parse coverage.xml if available for more accurate data
+        if [ -f coverage.xml ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Detailed Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "View the full HTML report in the artifacts below." >> $GITHUB_STEP_SUMMARY
+        fi
 
     - name: Upload coverage
       uses: actions/upload-artifact@v4
