@@ -11,6 +11,12 @@ install-dev:
 
 format:
 	@echo "Formatting code with black and isort..."
+	@echo "Removing unused imports with ruff..."
+	@if command -v uv > /dev/null 2>&1 && [ -f uv.lock ]; then \
+		uv run ruff check --fix --select F401 src/scripts test 2>/dev/null || true; \
+	else \
+		ruff check --fix --select F401 src/scripts test 2>/dev/null || true; \
+	fi
 	@echo "Adding copyright headers to Python files..."
 	@for file in $$(find src/scripts -name "*.py" -type f ! -name "__init__.py"); do \
 		if ! head -1 "$$file" | grep -q "# Copyright (C)"; then \
@@ -21,8 +27,13 @@ format:
 			} > "$$file.tmp" && mv "$$file.tmp" "$$file"; \
 		fi; \
 	done
-	black src/scripts test
-	isort src/scripts test
+	@if command -v uv > /dev/null 2>&1 && [ -f uv.lock ]; then \
+		uv run black src/scripts test; \
+		uv run isort src/scripts test; \
+	else \
+		black src/scripts test; \
+		isort src/scripts test; \
+	fi
 	@echo "✅ Formatting complete"
 
 format-check:

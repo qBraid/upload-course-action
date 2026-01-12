@@ -25,4 +25,7 @@ jobs:
       run: uv sync --extra test
 
     - name: Run tests
-      run: uv run make test
+      run: |
+        echo "::stop-commands::"
+        uv run make test
+        echo "::start-commands::"
