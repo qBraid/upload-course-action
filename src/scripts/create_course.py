@@ -1,10 +1,10 @@
 # Copyright (C) 2026 qBraid
 
-
 import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -113,9 +113,15 @@ class CourseCreator:
                         logger.info(f"Course ID: {course_id}")
                         if "GITHUB_OUTPUT" in os.environ:
                             try:
-                                with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                                    f.write(f"course_custom_id={course_id}\n")
-                            except IOError as e:
+                                subprocess.run(
+                                    f'echo "course_name={course_id}" >> $GITHUB_OUTPUT',
+                                    shell=True,
+                                )
+                                subprocess.run(
+                                    f'echo "course_custom_id={course_id}" >> $GITHUB_OUTPUT',
+                                    shell=True,
+                                )
+                            except subprocess.CalledProcessError as e:
                                 logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
                 except Exception:
                     pass
