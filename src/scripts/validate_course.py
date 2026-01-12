@@ -147,6 +147,7 @@ class CourseValidator:
         logger.info(f"Course Name={course_name}")
 
         from common import write_github_output
+
         write_github_output("course_name", str(course_name))
 
 

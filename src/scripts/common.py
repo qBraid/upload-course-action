@@ -84,20 +84,20 @@ class PollTimeoutError(ActionError):
 def write_github_output(key: str, value: str) -> None:
     """
     Safely write a key-value pair to GITHUB_OUTPUT.
-    
+
     Handles both single-line and multiline values. For multiline values,
     uses the delimiter syntax to prevent parsing errors.
-    
+
     Args:
         key: The output key name
         value: The output value (may contain newlines)
     """
     if "GITHUB_OUTPUT" not in os.environ:
         return
-    
+
     try:
         output_file = os.environ["GITHUB_OUTPUT"]
-        
+
         # Check if value contains newlines
         if "\n" in value:
             # Use delimiter syntax for multiline values
@@ -106,7 +106,7 @@ def write_github_output(key: str, value: str) -> None:
             # Ensure delimiter doesn't appear in value
             while delimiter in value:
                 delimiter = f"{delimiter}_ALT"
-            
+
             with open(output_file, "a") as f:
                 f.write(f"{key}<<{delimiter}\n")
                 f.write(value)

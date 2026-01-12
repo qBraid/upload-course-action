@@ -85,6 +85,7 @@ class ProgressPoller:
                     logger.info(f"qBook URL: {qbook_url}")
 
                     from common import write_github_output
+
                     write_github_output("qbook_url", str(qbook_url))
 
                     # qBook URL is treated as a success indicator; stop polling.

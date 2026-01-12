@@ -111,6 +111,7 @@ class CourseCreator:
                     if course_id:
                         logger.info(f"Course ID: {course_id}")
                         from common import write_github_output
+
                         write_github_output("course_name", str(course_id))
                         write_github_output("course_custom_id", str(course_id))
                 except Exception:
