@@ -1,4 +1,4 @@
-.PHONY: install install-test install-dev test test-unit test-e2e test-coverage coverage-report coverage-html format format-check lint lint-check check-headers clean sync lock version bump-version bump-patch bump-minor bump-major
+.PHONY: install install-test install-dev test test-unit test-e2e test-coverage coverage-report coverage-html format format-check lint lint-check check-headers clean sync lock version bump-version bump-patch bump-minor bump-major install-hooks
 
 install:
 	uv sync
@@ -11,6 +11,16 @@ install-dev:
 
 format:
 	@echo "Formatting code with black and isort..."
+	@echo "Adding copyright headers to Python files..."
+	@for file in $$(find src/scripts -name "*.py" -type f ! -name "__init__.py"); do \
+		if ! head -1 "$$file" | grep -q "# Copyright (C)"; then \
+			echo "Adding header to: $$file"; \
+			{ \
+				echo "# Copyright (C) 2026 qBraid"; \
+				cat "$$file"; \
+			} > "$$file.tmp" && mv "$$file.tmp" "$$file"; \
+		fi; \
+	done
 	black src/scripts test
 	isort src/scripts test
 	@echo "✅ Formatting complete"
@@ -35,7 +45,7 @@ format-check:
 	if [ $$MISSING_HEADERS -eq 1 ]; then \
 		echo "❌ Some files are missing copyright headers."; \
 		echo "Expected header format:"; \
-		echo "# Copyright (C) 2024 qBraid"; \
+		echo "# Copyright (C) 2026 qBraid"; \
 		exit 1; \
 	fi
 	@echo "✅ All checks passed (black, isort, pylint, headers)"
@@ -66,7 +76,7 @@ check-headers:
 	if [ $$MISSING_HEADERS -eq 1 ]; then \
 		echo "❌ Some files are missing copyright headers."; \
 		echo "Expected header format:"; \
-		echo "# Copyright (C) 2024 qBraid"; \
+		echo "# Copyright (C) 2026 qBraid"; \
 		exit 1; \
 	else \
 		echo "✅ All files have proper headers"; \
@@ -136,6 +146,15 @@ bump-major:
 	MAJOR=$$(echo $$VERSION | cut -d. -f1); \
 	NEW_VERSION="$$((MAJOR + 1)).0.0"; \
 	$(MAKE) bump-version V=$$NEW_VERSION
+
+install-hooks:
+	@echo "Installing Git hooks..."
+	@if [ -f scripts/install-hooks.sh ]; then \
+		./scripts/install-hooks.sh; \
+	else \
+		echo "❌ scripts/install-hooks.sh not found"; \
+		exit 1; \
+	fi
 
 clean:
 	find . -type d -name '__pycache__' -exec rm -rf {} +

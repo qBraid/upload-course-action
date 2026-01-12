@@ -55,9 +55,30 @@ The action integrates with qBraid's API using secure authentication:
     # Or run the test suite
     make test
     ```
-3.  **Update Action**: If you change inputs/outputs, update `action.yml`.
-4.  **Update Changelog**: Add your changes to `CHANGELOG.md` under `[Unreleased]`.
-5.  **Commit**: Commit changes to `main`. Since this is a composite action, no build step is required.
+3.  **Format Code**: Before committing, format your code:
+    ```bash
+    make format  # Auto-formats code and adds headers
+    ```
+4.  **Update Action**: If you change inputs/outputs, update `action.yml`.
+5.  **Update Changelog**: Add your changes to `CHANGELOG.md` under `[Unreleased]`.
+6.  **Commit**: Commit changes to `main`. Since this is a composite action, no build step is required.
+
+### Git Hooks
+
+A **pre-push hook** automatically formats code before pushing to remote. If code is reformatted, the push will be aborted and you'll need to commit the formatting changes first.
+
+**Install the hook:**
+```bash
+make install-hooks
+```
+
+**Manual formatting:**
+```bash
+make format        # Auto-format code
+make format-check  # Check if code is formatted (doesn't modify files)
+```
+
+**Note:** The hook uses `uv run make format` if `uv` is available, otherwise falls back to `make format` directly.
 
 ## Versioning
 

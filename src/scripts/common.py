@@ -1,3 +1,5 @@
+# Copyright (C) 2026 qBraid
+
 import logging
 import os
 import sys

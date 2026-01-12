@@ -1,3 +1,6 @@
+# Copyright (C) 2026 qBraid
+
+
 import os
 import sys
 import time

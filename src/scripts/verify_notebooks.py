@@ -1,3 +1,6 @@
+# Copyright (C) 2026 qBraid
+
+
 import json
 import os
 import re
