@@ -93,10 +93,12 @@ class TestActionFlowE2E:
 
         # Setup Mock Responses for QbraidSessionV1
         # Patch at the point where it's imported in the modules
-        with mock.patch("validate_api_key.QbraidSessionV1") as mock_session_cls_validate, \
-             mock.patch("create_course.QbraidSessionV1") as mock_session_cls_create, \
-             mock.patch("poll_files_progress.QbraidSessionV1") as mock_session_cls_poll:
-            
+        with (
+            mock.patch("validate_api_key.QbraidSessionV1") as mock_session_cls_validate,
+            mock.patch("create_course.QbraidSessionV1") as mock_session_cls_create,
+            mock.patch("poll_files_progress.QbraidSessionV1") as mock_session_cls_poll,
+        ):
+
             # Configure mock instances
             mock_session_instance_validate = mock_session_cls_validate.return_value
             mock_session_instance_create = mock_session_cls_create.return_value

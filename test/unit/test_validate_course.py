@@ -2,7 +2,6 @@ import json
 from unittest import mock
 
 import pytest
-
 from common import Config
 from validate_course import Course, CourseValidator
 

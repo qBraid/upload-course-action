@@ -2,7 +2,6 @@ from unittest import mock
 
 import nbformat
 import pytest
-
 from common import Config
 from verify_notebooks import NotebookVerifier
 

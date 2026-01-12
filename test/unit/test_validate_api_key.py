@@ -1,7 +1,6 @@
 from unittest import mock
 
 import pytest
-
 from common import Config
 from validate_api_key import AuthValidator
 

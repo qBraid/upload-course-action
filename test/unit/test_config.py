@@ -17,10 +17,7 @@ def test_config_default():
         else:
             import common
 
-        assert (
-            common.Config.API_BASE_URL
-            == "https://api-staging.qbraid.com/api/v1"
-        )
+        assert common.Config.API_BASE_URL == "https://api-staging.qbraid.com/api/v1"
 
 
 @pytest.mark.unit

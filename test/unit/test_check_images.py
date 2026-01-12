@@ -2,7 +2,6 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-
 from check_images import ImageValidator
 from common import Config
 

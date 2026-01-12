@@ -105,9 +105,7 @@ def sample_course_json():
 def sample_notebook_content():
     """Fixture providing sample notebook content."""
     return {
-        "cells": [
-            {"cell_type": "markdown", "metadata": {}, "source": ["# Chapter 1"]}
-        ],
+        "cells": [{"cell_type": "markdown", "metadata": {}, "source": ["# Chapter 1"]}],
         "metadata": {
             "kernelspec": {
                 "display_name": "Python 3",

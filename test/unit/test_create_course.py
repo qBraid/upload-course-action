@@ -3,7 +3,6 @@ from unittest import mock
 
 import pytest
 import requests
-
 from common import ActionError, ArticleType
 from create_course import CourseCreator
 

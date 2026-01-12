@@ -6,7 +6,6 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-
 import validate_course
 import verify_notebooks
 from common import Config
@@ -36,7 +35,7 @@ class TestNastyInputs:
         # Mock file existence for any notebook files referenced
         mock_exists.return_value = True
         mock_stat.return_value.st_size = 100
-        
+
         course_file = self.test_dir / "course with spaces.json"
         with open(course_file, "w") as f:
             json.dump(sample_course_json, f)
@@ -55,7 +54,7 @@ class TestNastyInputs:
         # Mock file existence for any notebook files referenced
         mock_exists.return_value = True
         mock_stat.return_value.st_size = 100
-        
+
         # Create file with newline in name (unlikely but possible)
         course_file = self.test_dir / "course\nwith\nnewlines.json"
         with open(course_file, "w") as f:
@@ -95,7 +94,7 @@ class TestNastyInputs:
         # Mock file existence for any notebook files referenced
         mock_exists.return_value = True
         mock_stat.return_value.st_size = 100
-        
+
         course_file = self.test_dir / "café_测试_тест.json"
         with open(course_file, "w", encoding="utf-8") as f:
             json.dump(sample_course_json, f, ensure_ascii=False)
@@ -113,7 +112,7 @@ class TestNastyInputs:
         # Mock file existence for any notebook files referenced
         mock_exists.return_value = True
         mock_stat.return_value.st_size = 100
-        
+
         long_name = "a" * 200 + ".json"
         course_file = self.test_dir / long_name
         with open(course_file, "w") as f:
