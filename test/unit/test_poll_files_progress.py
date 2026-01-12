@@ -53,3 +53,21 @@ class TestProgressPoller:
         with pytest.raises(SystemExit) as e:
             poller.run()
         assert e.value.code == 1
+
+    @mock.patch("poll_files_progress.ProgressPoller.fetch_status")
+    @mock.patch("poll_files_progress.time.sleep")
+    def test_run_qbookurl_exits_immediately(self, mock_sleep, mock_fetch):
+        """Test that qbookUrl presence causes immediate exit regardless of status."""
+        poller = ProgressPoller("key", "id")
+
+        # qbookUrl present but status is not "processed" - should still exit successfully
+        mock_fetch.return_value = {"status": "processing", "qbookUrl": "http://url"}
+
+        with pytest.raises(SystemExit) as e:
+            poller.run()
+        assert e.value.code == 0
+
+        # Should only call fetch_status once since we exit immediately
+        assert mock_fetch.call_count == 1
+        # Should not sleep since we exit immediately
+        assert mock_sleep.call_count == 0

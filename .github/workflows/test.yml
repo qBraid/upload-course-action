@@ -26,7 +26,7 @@ jobs:
         run: uv python install
 
       - name: Install dependencies
-        run: uv pip install -e ".[test]"
+        run: uv sync --extra test
 
       - name: Run unit tests
         run: uv run pytest -q test/unit --no-cov
@@ -59,10 +59,9 @@ jobs:
           fail_on_error: true
 
       - name: Run zizmor
-        uses: zizmor/zizmor-action@v1
+        uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          fail-on-error: true
+          advanced-security: false
 
   e2e-action-test:
     name: E2E Action Test
@@ -93,7 +92,7 @@ jobs:
         id: test-valid
         uses: ./
         with:
-          api-key: ${{ secrets.QBRAID_API_KEY || 'test-key' }}
+          api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
           course-json-path: test-e2e/course.json
           article-type: course
@@ -111,7 +110,7 @@ jobs:
         id: test-spaces
         uses: ./
         with:
-          api-key: ${{ secrets.QBRAID_API_KEY || 'test-key' }}
+          api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
           course-json-path: "test-e2e/course.json"
           article-type: "course"
@@ -121,7 +120,7 @@ jobs:
         id: test-missing
         uses: ./
         with:
-          api-key: ${{ secrets.QBRAID_API_KEY || 'test-key' }}
+          api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
           course-json-path: "nonexistent.json"
           article-type: course

@@ -1,13 +1,13 @@
 .PHONY: install install-test install-dev test test-unit test-e2e test-coverage coverage-report coverage-html format format-check lint lint-check check-headers clean sync lock version bump-version bump-patch bump-minor bump-major
 
 install:
-	uv pip install -e .
+	uv sync
 
 install-test:
-	uv pip install -e ".[test]"
+	uv sync --extra test
 
 install-dev:
-	uv pip install -e ".[test,dev]"
+	uv sync --extra dev --extra test
 
 format:
 	@echo "Formatting code with black and isort..."

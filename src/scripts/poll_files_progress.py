@@ -86,6 +86,9 @@ class ProgressPoller:
                         except IOError as e:
                             logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
 
+                    # qBook URL is treated as a success indicator; stop polling.
+                    sys.exit(0)
+
                 status = ProcessingStatus(data.get("status", "unknown"))
 
                 if status == ProcessingStatus.PROCESSED:

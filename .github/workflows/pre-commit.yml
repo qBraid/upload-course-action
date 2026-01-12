@@ -32,7 +32,7 @@ jobs:
       run: uv python install
 
     - name: Install dependencies
-      run: uv pip install -e ".[dev]"
+      run: uv sync --extra dev
 
     - name: Check isort, pylint, black, headers
-      run: make format-check
+      run: uv run make format-check
