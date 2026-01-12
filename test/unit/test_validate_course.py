@@ -1,20 +1,13 @@
 import json
-import os
-import sys
-from pathlib import Path
 from unittest import mock
 
 import pytest
-
-# Add src/scripts to path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/scripts"))
-)
 
 from common import Config
 from validate_course import Course, CourseValidator
 
 
+@pytest.mark.unit
 class TestCourseValidator:
 
     @mock.patch("validate_course.Path.exists")

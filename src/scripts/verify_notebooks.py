@@ -172,11 +172,6 @@ class NotebookVerifier:
         logger.info("✅ All notebook files exist and passed content validation")
 
 
-def verify_notebooks():
-    """Wrapper function for backwards compatibility."""
+if __name__ == "__main__":
     verifier = NotebookVerifier()
     verifier.run()
-
-
-if __name__ == "__main__":
-    verify_notebooks()

@@ -5,7 +5,7 @@ This guide explains how to publish this action to the GitHub Marketplace.
 ## Prerequisites
 
 ✅ The action code is complete and tested.
-✅ All files (including `src/scripts/` and `requirements.txt`) are committed.
+✅ All files (including `src/scripts/` and `pyproject.toml`) are committed.
 ✅ `action.yml` is properly configured.
 
 ## Steps to Publish

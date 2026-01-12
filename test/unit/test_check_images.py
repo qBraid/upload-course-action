@@ -1,19 +1,13 @@
-import os
-import sys
 from pathlib import Path
 from unittest import mock
 
 import pytest
 
-# Add src/scripts to path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/scripts"))
-)
-
 from check_images import ImageValidator
 from common import Config
 
 
+@pytest.mark.unit
 class TestImageValidator:
 
     def setup_method(self):

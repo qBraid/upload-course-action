@@ -1,32 +1,14 @@
 import json
-import os
-import sys
 from unittest import mock
 
 import pytest
 import requests
 
-# Add src/scripts to path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/scripts"))
-)
-
-# Mock QbraidSessionV1 for import
-try:
-    import qbraid_core
-
-    if not hasattr(qbraid_core, "QbraidSessionV1"):
-        qbraid_core.QbraidSessionV1 = mock.Mock()
-except ImportError:
-    qbraid_core = mock.Mock()
-    sys.modules["qbraid_core"] = qbraid_core
-    if not hasattr(qbraid_core, "QbraidSessionV1"):
-        qbraid_core.QbraidSessionV1 = mock.Mock()
-
-from common import ActionError, ArticleType, Config
+from common import ActionError, ArticleType
 from create_course import CourseCreator
 
 
+@pytest.mark.unit
 class TestCourseCreator:
 
     def setup_method(self):

@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8f4b7f8486ec3f3d81099d10020348a54c5f8f84  # v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Verify version matches VERSION file
+        run: |
+          FILE_VERSION=$(cat VERSION)
+          TAG_VERSION=${{ steps.version.outputs.version }}
+          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Version mismatch: VERSION file has $FILE_VERSION but tag is v$TAG_VERSION"
+            exit 1
+          fi
+
+      - name: Generate changelog excerpt
+        id: changelog
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          # Extract changelog section for this version
+          awk "/^## \[$VERSION\]/,/^## \[/" CHANGELOG.md | sed '$d' > release_notes.txt
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          cat release_notes.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@9691088de579eb85b3e05b5e5c0e0c7c0e0c7c0e0  # v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## Changes in v${{ steps.version.outputs.version }}
+
+            ${{ steps.changelog.outputs.notes }}
+
+            ## Installation
+
+            Use this version in your workflows:
+
+            ```yaml
+            uses: courseBuilderNelson/UploadActionRepo@v${{ steps.version.outputs.version }}
+            ```
+
+            Or use the latest version:
+
+            ```yaml
+            uses: courseBuilderNelson/UploadActionRepo@latest
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

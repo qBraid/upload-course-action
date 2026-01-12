@@ -148,10 +148,6 @@ class ImageValidator:
         logger.info("✅ All image references in notebooks are valid")
 
 
-def verify_images():
+if __name__ == "__main__":
     validator = ImageValidator()
     validator.run()
-
-
-if __name__ == "__main__":
-    verify_images()

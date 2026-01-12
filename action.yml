@@ -30,17 +30,20 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Install UV
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-        cache: 'pip'
 
     - name: Install dependencies
       shell: bash
       run: |
-        pip install uv
-        uv pip install --system -r ${{ github.action_path }}/requirements.txt
+        uv pip install --system -e ${{ github.action_path }}
 
     - name: Validate Repo Read Github Token
       shell: bash

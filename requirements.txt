@@ -1,5 +1,0 @@
-requests
-nbformat
-qbraid-core
-pydantic
-tenacity

@@ -39,11 +39,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy to qBraid
-        uses: courseBuilderNelson/UploadActionRepo@latest
+        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+**Note:** For production use, pin to a specific version (e.g., `@v0.1.0`) instead of `@latest` for better reproducibility. See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Inputs
 
@@ -74,9 +76,16 @@ This action validates your course structure and creates it via the qBraid API:
 
 **Security Benefit:** The action only sends metadata and repository references to qBraid - your API key is validated but files are accessed securely via GitHub tokens.
 
-## License
+## Versioning
 
-MIT
+This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes.
+
+**Current Version:** `0.1.0`
+
+**Recommended Usage:**
+- Production: Pin to a specific version (e.g., `@v0.1.0`)
+- Development: Use `@main` or a specific commit SHA
+- Latest: Use `@latest` (not recommended for production)
 
 ## Security
 

@@ -1,19 +1,13 @@
-import os
-import sys
 from unittest import mock
 
 import nbformat
 import pytest
 
-# Add src/scripts to path
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/scripts"))
-)
-
 from common import Config
 from verify_notebooks import NotebookVerifier
 
 
+@pytest.mark.unit
 class TestNotebookVerifier:
 
     def setup_method(self):
