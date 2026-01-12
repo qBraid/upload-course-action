@@ -1,7 +1,6 @@
 # Copyright (C) 2026 qBraid
 
 import os
-import subprocess
 import sys
 import time
 from enum import Enum
@@ -52,7 +51,7 @@ class ProgressPoller:
 
     @retry(
         stop=stop_after_attempt(Config.MAX_CONSECUTIVE_ERRORS),
-        wait=wait_fixed(Config.POLL_INTERVAL_SECONDS),
+        wait=wait_fixed(3),  # Short retry wait to distinguish from polling interval
         retry=retry_if_exception_type((requests.RequestException,)),
         reraise=True,
     )
@@ -69,7 +68,10 @@ class ProgressPoller:
         """
         Polls the status of course file processing.
         Raises:
-            SystemExit on failure or timeout.
+            ActionError: On polling errors or retry exhaustion.
+            WorkerProcessingError: When course processing fails.
+            PollTimeoutError: When polling times out.
+            SystemExit: On success (exit code 0).
         """
         for attempt in range(1, Config.MAX_POLL_ATTEMPTS + 1):
             try:
@@ -84,11 +86,8 @@ class ProgressPoller:
 
                     if "GITHUB_OUTPUT" in os.environ:
                         try:
-                            subprocess.run(
-                                f'echo "qbook_url={qbook_url}" >> $GITHUB_OUTPUT',
-                                shell=True,
-                            )
-
+                            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+                                f.write(f"qbook_url={qbook_url}\n")
                         except IOError as e:
                             logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
 
@@ -119,25 +118,35 @@ class ProgressPoller:
 
             except RetryError:
                 logger.error("Too many consecutive errors polling worker.")
-                sys.exit(1)
+                raise ActionError("Too many consecutive errors polling worker.")
             except WorkerProcessingError as e:
                 logger.error(str(e))
-                sys.exit(1)
+                raise
             except Exception as e:
+                # If it's already an ActionError, re-raise it
+                if isinstance(e, ActionError):
+                    raise
                 logger.warning(f"Error polling worker: {e}")
+                raise ActionError(f"Unexpected error polling worker: {e}")
 
             # Wait before next attempt if not finished
             if attempt < Config.MAX_POLL_ATTEMPTS:
                 time.sleep(Config.POLL_INTERVAL_SECONDS)
 
-        logger.error("ERROR: Worker service did not complete within the timeout period")
-        sys.exit(1)
+        raise PollTimeoutError(
+            f"Worker service did not complete within the timeout period "
+            f"({Config.MAX_POLL_ATTEMPTS} attempts)"
+        )
 
 
 def poll_worker(api_key: str, course_custom_id: str):
     """Backwards compatibility wrapper."""
-    poller = ProgressPoller(api_key, course_custom_id)
-    poller.run()
+    try:
+        poller = ProgressPoller(api_key, course_custom_id)
+        poller.run()
+    except (ActionError, WorkerProcessingError, PollTimeoutError) as e:
+        logger.error(str(e))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
