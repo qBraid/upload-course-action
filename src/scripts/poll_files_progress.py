@@ -84,12 +84,8 @@ class ProgressPoller:
                     logger.info("✅ Course processing complete!")
                     logger.info(f"qBook URL: {qbook_url}")
 
-                    if "GITHUB_OUTPUT" in os.environ:
-                        try:
-                            with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                                f.write(f"qbook_url={qbook_url}\n")
-                        except IOError as e:
-                            logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
+                    from common import write_github_output
+                    write_github_output("qbook_url", str(qbook_url))
 
                     # qBook URL is treated as a success indicator; stop polling.
                     sys.exit(0)

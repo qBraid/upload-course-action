@@ -59,7 +59,7 @@ jobs:
         run: actionlint
 
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@e639db99335bc9038abc0e066dfcd72e23d26fb4
+        uses: zizmorcore/zizmor-action@v0.1.2
         with:
           advanced-security: false
 

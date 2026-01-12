@@ -110,13 +110,9 @@ class CourseCreator:
                     course_id = resp_json.get("article", {}).get("customId")
                     if course_id:
                         logger.info(f"Course ID: {course_id}")
-                        if "GITHUB_OUTPUT" in os.environ:
-                            try:
-                                with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                                    f.write(f"course_name={course_id}\n")
-                                    f.write(f"course_custom_id={course_id}\n")
-                            except IOError as e:
-                                logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
+                        from common import write_github_output
+                        write_github_output("course_name", str(course_id))
+                        write_github_output("course_custom_id", str(course_id))
                 except Exception:
                     pass
             else:

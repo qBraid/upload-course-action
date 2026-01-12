@@ -146,12 +146,8 @@ class CourseValidator:
         course_name = course.courseName
         logger.info(f"Course Name={course_name}")
 
-        if "GITHUB_OUTPUT" in os.environ:
-            try:
-                with open(os.environ["GITHUB_OUTPUT"], "a") as f:
-                    f.write(f"course_name={course_name}\n")
-            except IOError as e:
-                logger.warning(f"Failed to write to GITHUB_OUTPUT: {e}")
+        from common import write_github_output
+        write_github_output("course_name", str(course_name))
 
 
 def validate_course_json(course_file: str):
