@@ -1,10 +1,76 @@
-.PHONY: install install-test test test-unit test-e2e test-coverage coverage-report coverage-html clean sync lock version bump-version bump-patch bump-minor bump-major
+.PHONY: install install-test install-dev test test-unit test-e2e test-coverage coverage-report coverage-html format format-check lint lint-check check-headers clean sync lock version bump-version bump-patch bump-minor bump-major
 
 install:
 	uv pip install -e .
 
 install-test:
 	uv pip install -e ".[test]"
+
+install-dev:
+	uv pip install -e ".[test,dev]"
+
+format:
+	@echo "Formatting code with black and isort..."
+	black src/scripts test
+	isort src/scripts test
+	@echo "✅ Formatting complete"
+
+format-check:
+	@echo "=== Checking code formatting ==="
+	@echo "Checking black..."
+	@black --check src/scripts test || (echo "❌ Code is not formatted. Run 'make format' to fix." && exit 1)
+	@echo "Checking isort..."
+	@isort --check-only src/scripts test || (echo "❌ Imports are not sorted. Run 'make format' to fix." && exit 1)
+	@echo "Checking pylint..."
+	@pylint src/scripts --rcfile=.pylintrc --fail-under=7.0 || (echo "❌ Pylint score is below 7.0. Fix issues before committing." && exit 1)
+	@echo "Checking headers..."
+	@HEADER_PATTERN="# Copyright (C)"; \
+	MISSING_HEADERS=0; \
+	for file in $$(find src/scripts -name "*.py" -type f ! -name "__init__.py"); do \
+		if ! head -1 "$$file" | grep -q "$$HEADER_PATTERN"; then \
+			echo "❌ Missing header in: $$file"; \
+			MISSING_HEADERS=1; \
+		fi; \
+	done; \
+	if [ $$MISSING_HEADERS -eq 1 ]; then \
+		echo "❌ Some files are missing copyright headers."; \
+		echo "Expected header format:"; \
+		echo "# Copyright (C) 2024 qBraid"; \
+		exit 1; \
+	fi
+	@echo "✅ All checks passed (black, isort, pylint, headers)"
+
+lint:
+	@echo "Running linters..."
+	@if command -v ruff > /dev/null; then \
+		ruff check src/scripts test; \
+	else \
+		echo "⚠️  ruff not installed. Install with: uv pip install ruff"; \
+	fi
+
+lint-check:
+	@echo "Running pylint..."
+	@pylint src/scripts --disable=C0111,C0103,R0913,R0912 || (echo "❌ Pylint found issues. Fix them before committing." && exit 1)
+	@echo "✅ Pylint checks passed"
+
+check-headers:
+	@echo "Checking file headers..."
+	@HEADER_PATTERN="# Copyright (C)"; \
+	MISSING_HEADERS=0; \
+	for file in $$(find src/scripts -name "*.py" -type f ! -name "__init__.py"); do \
+		if ! head -1 "$$file" | grep -q "$$HEADER_PATTERN"; then \
+			echo "❌ Missing header in: $$file"; \
+			MISSING_HEADERS=1; \
+		fi; \
+	done; \
+	if [ $$MISSING_HEADERS -eq 1 ]; then \
+		echo "❌ Some files are missing copyright headers."; \
+		echo "Expected header format:"; \
+		echo "# Copyright (C) 2024 qBraid"; \
+		exit 1; \
+	else \
+		echo "✅ All files have proper headers"; \
+	fi
 
 sync:
 	uv sync --all-groups

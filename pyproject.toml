@@ -20,6 +20,11 @@ test = [
     "mock",
     "requests-mock",
 ]
+dev = [
+    "black",
+    "isort",
+    "pylint",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -74,3 +79,30 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@abstractmethod",
 ]
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["scripts"]
+skip_glob = ["*/__pycache__/*", "*/venv/*", "*/.venv/*"]

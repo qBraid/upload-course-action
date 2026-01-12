@@ -5,11 +5,21 @@ from enum import Enum
 from typing import Any, Dict
 
 import requests
-from common import (ActionError, Config, PollTimeoutError,
-                    WorkerProcessingError, setup_logging)
+from common import (
+    ActionError,
+    Config,
+    PollTimeoutError,
+    WorkerProcessingError,
+    setup_logging,
+)
 from qbraid_core import QbraidSessionV1
-from tenacity import (RetryError, retry, retry_if_exception_type,
-                      stop_after_attempt, wait_fixed)
+from tenacity import (
+    RetryError,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_fixed,
+)
 
 logger = setup_logging(__name__)
 

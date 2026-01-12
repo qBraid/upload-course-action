@@ -244,7 +244,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy to qBraid
         uses: courseBuilderNelson/UploadActionRepo@main
@@ -405,7 +405,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Test Action with Local API
         env:
@@ -450,7 +450,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Test Action
         env:
@@ -519,7 +519,7 @@ If you have SSH keys set up:
 
 1. Use SSH URLs in your workflow:
    ```yaml
-   - uses: actions/checkout@v4
+   - uses: actions/checkout@v6
      with:
        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
    ```
@@ -625,7 +625,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy to qBraid
         uses: courseBuilderNelson/UploadActionRepo@main
@@ -665,7 +665,7 @@ jobs:
   test-validation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -749,7 +749,7 @@ To test against a local API from a GitHub Actions workflow, you'll need to expos
      test:
        runs-on: ubuntu-latest
        steps:
-         - uses: actions/checkout@v4
+         - uses: actions/checkout@v6
          
          - name: Deploy to qBraid (Local API)
            env:
@@ -775,7 +775,7 @@ jobs:
   test:
     runs-on: self-hosted  # or ubuntu-latest for Codespaces
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       
       - name: Deploy to qBraid (Local API)
         env:
@@ -810,7 +810,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy to qBraid (Local API)
         env:
