@@ -6,10 +6,24 @@ branding:
   color: 'blue'
 
 inputs:
+  api-key:
+    description: 'Your qBraid API key (store in secrets)'
+    required: true
+  repo-read-token:
+    description: 'GitHub token with read access to the repository'
+    required: true
   course-json-path:
     description: 'Path to course.json file'
     required: false
     default: 'course.json'
+  article-type:
+    description: 'Type of article to create (course or blog)'
+    required: false
+    default: 'course'
+  force-duplicate-questions:
+    description: 'Whether to force upload duplicate questions (true or false)'
+    required: false
+    default: 'false'
   draft:
     description: 'Whether to create a draft course (true or false)'
     required: false

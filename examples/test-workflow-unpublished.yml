@@ -25,7 +25,7 @@ jobs:
         #   @main - uses the main branch (good for testing latest changes)
         #   @abc123def456 - uses a specific commit SHA (most stable)
         #   @v0.1.0 - uses a specific tag (recommended for production)
-        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
+        uses: qBraid/upload-course-api@v0.1.0
         with:
           # Required: Your qBraid API Key (stored in repository secrets)
           api-key: ${{ secrets.QBRAID_API_KEY }}

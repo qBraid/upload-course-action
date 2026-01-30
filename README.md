@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to qBraid
-        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
+        uses: qBraid/upload-course-api@v0.1.0
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}

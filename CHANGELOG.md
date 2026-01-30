@@ -44,5 +44,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure repository access via GitHub tokens
 - No credentials stored in action code
 
-[Unreleased]: https://github.com/courseBuilderNelson/UploadActionRepo/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/courseBuilderNelson/UploadActionRepo/releases/tag/v0.1.0
+[Unreleased]: https://github.com/qBraid/upload-course-api/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/qBraid/upload-course-api/releases/tag/v0.1.0
