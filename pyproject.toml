@@ -1,6 +1,6 @@
 [project]
 name = "upload-action-repo"
-version = "0.1.0"
+version = "0.1.0-beta"
 description = "A GitHub Action for deploying educational courses to qBraid learning platform"
 readme = "README.md"
 requires-python = ">=3.11"
