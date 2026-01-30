@@ -27,7 +27,7 @@ class Config:
     """Application configuration constants."""
 
     # API Configuration
-    DEFAULT_API_BASE_URL: str = "https://2be8884c165b.ngrok-free.app/app1/api/v1"
+    DEFAULT_API_BASE_URL: str = "https://147dca34ae04.ngrok-free.app/app1/api/v1"
     API_BASE_URL: str = os.getenv("QBRAID_API_BASE_URL", DEFAULT_API_BASE_URL)
     REQUEST_TIMEOUT_SECONDS: int = 15
     MAX_POLL_ATTEMPTS: int = 60
