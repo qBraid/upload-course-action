@@ -7,10 +7,10 @@ branding:
 
 inputs:
   api-key:
-    description: 'Your qBraid API key (store in secrets)'
+    description: 'qBraid API key (pass from secrets, e.g. secrets.QBRAID_API_KEY)'
     required: true
   repo-read-token:
-    description: 'GitHub token with read access to the repository'
+    description: 'GitHub token with read access (pass from secrets, e.g. secrets.GITHUB_TOKEN)'
     required: true
   course-json-path:
     description: 'Path to course.json file'
@@ -59,18 +59,17 @@ runs:
       run: |
         uv pip install --system -e ${{ github.action_path }}
 
-    - name: Validate Repo Read Github Token
+    - name: Validate required secrets (passed as inputs)
       shell: bash
       run: |
-        if [[ -z "${{ inputs.repo-read-token }}" ]]; then
-          echo "::error::repo-read-token is empty. Please ensure it is set in the secrets."
+        if [[ -z "${{ inputs.api-key }}" ]]; then
+          echo "::error::api-key is empty. In your workflow, pass it from secrets (e.g. secrets.QBRAID_API_KEY)."
           exit 1
         fi
-
-    - name: Stage 0 - Validate API Key
-      shell: bash
-      run: |
-        python ${{ github.action_path }}/src/scripts/validate_api_key.py '${{ inputs.api-key }}'
+        if [[ -z "${{ inputs.repo-read-token }}" ]]; then
+          echo "::error::repo-read-token is empty. In your workflow, pass it from secrets (e.g. secrets.GITHUB_TOKEN)."
+          exit 1
+        fi
 
     - name: Stage 1 - Validate course.json structure
       id: validate-course
