@@ -21,6 +21,21 @@ class ImageLink(BaseModel):
     darkLogo: str
     lightLogo: str
 
+    @field_validator("darkLogo", "lightLogo")
+    @classmethod
+    def check_image_link(cls, v: str) -> str:
+        if v == "":
+            return v
+        if v.startswith(("http://", "https://", "ftp://")):
+            raise ValueError(
+                "External links are not allowed. Images must be referenced from the root of the GitHub action."
+            )
+        if not Path(v).exists():
+            raise ValueError(f"Image file not found: {v}")
+        return v
+
+
+
 
 class Section(BaseModel):
     """Model for course sections."""
