@@ -35,6 +35,9 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 - Edge case E2E tests for "nasty" inputs (spaces, newlines, unicode, etc.)
 - Workflow checks with actionlint and zizmor
 - GitHub Actions runner simulation fixtures (`github_output`, `github_env`, `runner_filesystem`)
+- Automated CI workflow for formatting (Black, isort), linting (Pylint), spell checking, action metadata linting, and pytest matrix testing
+- PR changelog guard workflow that requires `CHANGELOG.md` updates when code-related files change
+- Typos configuration file to ignore generated artifacts and allow project-specific terms (`qbraid`, `qbook`)
 
 ### Changed
 - Updated test infrastructure to use pytest exclusively

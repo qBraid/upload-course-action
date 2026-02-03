@@ -1,0 +1,6 @@
+[files]
+extend-exclude = ["uv.lock", ".venv", "htmlcov", ".pytest_cache"]
+
+[default.extend-words]
+qbraid = "qbraid"
+qbook = "qbook"
