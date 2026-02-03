@@ -95,7 +95,7 @@ class TestActionFlowE2E:
         # Patch at the point where it's imported in the modules
         with (
             mock.patch("validate_api_key.QbraidSessionV1") as mock_session_cls_validate,
-            mock.patch("create_course.QbraidSessionV1") as mock_session_cls_create,
+            mock.patch("deploy_common.QbraidSessionV1") as mock_session_cls_create,
             mock.patch("poll_files_progress.QbraidSessionV1") as mock_session_cls_poll,
         ):
 
@@ -123,7 +123,7 @@ class TestActionFlowE2E:
             mock_create_resp = mock.Mock()
             mock_create_resp.status_code = 201
             mock_create_resp.json.return_value = {"article": {"customId": "course-123"}}
-            mock_session_instance_create.post.return_value = mock_create_resp
+            mock_session_instance_create.request.return_value = mock_create_resp
 
             # --- Step 1: Validate API Key ---
             print("\n--- Step 1: Validate API Key ---")

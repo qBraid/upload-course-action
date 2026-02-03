@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 from common import ActionError, ArticleType, Config, ValidationError, setup_logging
 from deploy_common import (
@@ -46,19 +46,23 @@ class CourseUpdater(CourseDeployer):
 
     def run(self) -> None:
         """Updates a course on qBraid using the API."""
-        logger.info(f"Updating article: {self.course_custom_id} (type: {self.article_type.value})")
-        
+        logger.info(
+            f"Updating article: {self.course_custom_id} (type: {self.article_type.value})"
+        )
+
         # Taking a best guess at the update endpoint based on the creates endpoint structure
         # Create: /learn/articles/{type}/ingest
         # Update: /learn/articles/{type}/{id}
         url = f"/learn/articles/{self.article_type.value}/{self.course_custom_id}"
-        
+
         headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
         payload = self.get_common_payload()
-        
+
         try:
             response = self.make_request("PUT", url, headers, payload)
-            self.handle_response(response, f"✅ Course {self.course_custom_id} updated successfully")
+            self.handle_response(
+                response, f"✅ Course {self.course_custom_id} updated successfully"
+            )
         except Exception as e:
             if isinstance(e, ActionError):
                 raise
@@ -93,14 +97,16 @@ def update_course(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update a course on qBraid")
-    
+
     parser.add_argument("--api-key", required=True, type=validate_api_key)
     parser.add_argument("--course-custom-id", required=True, type=validate_course_id)
     parser.add_argument("--repo-read-token", required=True, type=validate_repo_token)
     parser.add_argument("--repo-url", required=True, type=validate_repo_url)
     parser.add_argument("--commit-sha", required=True, type=validate_commit_sha)
     parser.add_argument("--article-type", required=True, type=validate_article_type)
-    parser.add_argument("--force-duplicate-questions", required=True, type=validate_boolean)
+    parser.add_argument(
+        "--force-duplicate-questions", required=True, type=validate_boolean
+    )
 
     try:
         args = parser.parse_args()

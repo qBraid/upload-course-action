@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import Dict, Any
+from typing import Any, Dict
 
 from common import ActionError, ArticleType, Config, ValidationError, setup_logging
 from deploy_common import (
@@ -44,14 +44,16 @@ class CourseCreator(CourseDeployer):
     def run(self) -> None:
         """Creates a course on qBraid using the API."""
         logger.info(f"Creating article of type: {self.article_type.value}")
-        
+
         url = f"/learn/articles/{self.article_type.value}/ingest"
         headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
         payload = self.get_common_payload()
-        
+
         try:
             response = self.make_request("POST", url, headers, payload)
-            self.handle_response(response, "✅ Course created successfully via qBraid API")
+            self.handle_response(
+                response, "✅ Course created successfully via qBraid API"
+            )
         except Exception as e:
             if isinstance(e, ActionError):
                 raise
@@ -84,13 +86,15 @@ def create_course(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a course on qBraid")
-    
+
     parser.add_argument("--api-key", required=True, type=validate_api_key)
     parser.add_argument("--repo-read-token", required=True, type=validate_repo_token)
     parser.add_argument("--repo-url", required=True, type=validate_repo_url)
     parser.add_argument("--commit-sha", required=True, type=validate_commit_sha)
     parser.add_argument("--article-type", required=True, type=validate_article_type)
-    parser.add_argument("--force-duplicate-questions", required=True, type=validate_boolean)
+    parser.add_argument(
+        "--force-duplicate-questions", required=True, type=validate_boolean
+    )
 
     try:
         args = parser.parse_args()

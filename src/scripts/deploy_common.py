@@ -10,7 +10,14 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import requests
-from common import ActionError, ArticleType, Config, ValidationError, setup_logging, write_github_output
+from common import (
+    ActionError,
+    ArticleType,
+    Config,
+    ValidationError,
+    setup_logging,
+    write_github_output,
+)
 from qbraid_core import QbraidSessionV1
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
 
@@ -90,6 +97,7 @@ def validate_commit_sha(sha: str) -> str:
         )
     return sha
 
+
 def validate_course_id(course_id: str) -> str:
     """Validate course ID is not empty."""
     if not course_id or not course_id.strip():
@@ -141,15 +149,15 @@ class CourseDeployer:
             "repoUrl": self.repo_url,
             "commitSha": self.commit_sha,
         }
-        
+
         if run_attempt:
             try:
                 payload["runAttempt"] = int(run_attempt)
             except ValueError:
                 logger.warning(f"Invalid GITHUB_RUN_ATTEMPT value: {run_attempt}")
-        
+
         return payload
-    
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_fixed(2),
@@ -169,7 +177,9 @@ class CourseDeployer:
         )
         return response
 
-    def handle_response(self, response: requests.Response, success_message: str) -> None:
+    def handle_response(
+        self, response: requests.Response, success_message: str
+    ) -> None:
         """Handles the API response."""
         if response.status_code in [200, 201]:
             logger.info(success_message)

@@ -29,48 +29,41 @@ class TestCourseCreator:
         else:
             self.creator.session.reset_mock()
 
-    @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("json.load")
-    @mock.patch("create_course.Path.exists")
-    def test_run_success(self, mock_exists, mock_json_load, mock_file):
+    def test_run_success(self):
         """Test successful course creation."""
-        mock_exists.return_value = True
-        mock_json_load.return_value = {"valid": "data"}
+        self.creator.load_course_data = mock.Mock(return_value={"valid": "data"})
 
         mock_response = mock.Mock()
         mock_response.status_code = 201
         mock_response.json.return_value = {"article": {"customId": "123"}}
-        self.creator.session.post.return_value = mock_response
+        self.creator.session.request.return_value = mock_response
 
         self.creator.run()
 
-        # Verify post called
-        self.creator.session.post.assert_called_once()
-        args, kwargs = self.creator.session.post.call_args
+        self.creator.session.request.assert_called_once()
+        args, kwargs = self.creator.session.request.call_args
 
         payload = json.loads(kwargs["data"])
         assert payload["repoReadToken"] == self.token
         assert payload["forceDuplicateQuestions"] is True
         assert kwargs["headers"]["X-API-Key"] == self.api_key
+        assert args[0] == "POST"
+        assert "/learn/articles/course/ingest" in args[1]
 
-    @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("json.load")
-    @mock.patch("create_course.Path.exists")
-    def test_run_failure(self, mock_exists, mock_json_load, mock_file):
+    def test_run_failure(self):
         """Test failure scenario."""
-        mock_exists.return_value = True
-        mock_json_load.return_value = {"course": "data"}
+        self.creator.load_course_data = mock.Mock(return_value={"course": "data"})
 
         mock_response = mock.Mock()
         mock_response.status_code = 400
-        self.creator.session.post.return_value = mock_response
+        mock_response.text = "bad request"
+        self.creator.session.request.return_value = mock_response
 
         with pytest.raises(ActionError):
             self.creator.run()
 
-        # Verify
-        self.creator.session.post.assert_called_once()
-        args, kwargs = self.creator.session.post.call_args
+        self.creator.session.request.assert_called_once()
+        _, kwargs = self.creator.session.request.call_args
 
         payload = json.loads(kwargs["data"])
         assert payload["data"] == {"course": "data"}
@@ -83,39 +76,31 @@ class TestCourseCreator:
         with pytest.raises(ActionError):
             creator.run()
 
-    @mock.patch("create_course.Path.exists")
-    def test_no_data_file(self, mock_exists):
+    def test_no_data_file(self):
         """Test behavior when data file doesn't exist."""
-        mock_exists.return_value = False
+        self.creator.load_course_data = mock.Mock(
+            side_effect=ActionError("course_data.json not found")
+        )
         with pytest.raises(ActionError):
             self.creator.run()
 
-    @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("json.load")
-    @mock.patch("create_course.Path.exists")
-    def test_api_fail_network(self, mock_exists, mock_json, mock_open):
+    def test_api_fail_network(self):
         """Test network failure."""
-        mock_exists.return_value = True
-        mock_json.return_value = {}
+        self.creator.load_course_data = mock.Mock(return_value={})
 
-        self.creator.session.post.reset_mock()
-        self.creator.session.post.side_effect = requests.RequestException(
+        self.creator.session.request.reset_mock()
+        self.creator.session.request.side_effect = requests.RequestException(
             "Network Error"
         )
 
         with pytest.raises(ActionError):
             self.creator.run()
 
-    @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("json.load")
-    @mock.patch("create_course.Path.exists")
-    def test_invalid_article_type(self, mock_exists, mock_json, mock_open):
+    def test_invalid_article_type(self):
         """Test invalid article type defaults to course."""
-        mock_exists.return_value = True
-        mock_json.return_value = {}
-
         mock_response = mock.Mock()
         mock_response.status_code = 200
+        mock_response.json.return_value = {"article": {"customId": "course-123"}}
 
         creator = CourseCreator(
             api_key="key",
@@ -129,11 +114,13 @@ class TestCourseCreator:
         else:
             creator.session.reset_mock()
 
-        creator.session.post.return_value = mock_response
-        creator.session.post.side_effect = None
+        creator.load_course_data = mock.Mock(return_value={})
+        creator.session.request.return_value = mock_response
+        creator.session.request.side_effect = None
 
         creator.run()
 
         assert creator.article_type == ArticleType.COURSE
-        args, kwargs = creator.session.post.call_args
-        assert "/learn/articles/course/ingest" in args[0]
+        args, kwargs = creator.session.request.call_args
+        assert args[0] == "POST"
+        assert "/learn/articles/course/ingest" in args[1]
