@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import re
 import sys
 from pathlib import Path
@@ -132,13 +133,22 @@ class CourseDeployer:
     def get_common_payload(self) -> Dict[str, Any]:
         """Returns the common payload parameters."""
         course_data = self.load_course_data()
-        return {
+        run_attempt = os.getenv("GITHUB_RUN_ATTEMPT")
+        payload = {
             "data": course_data,
             "forceDuplicateQuestions": self.force_duplicate_questions,
             "repoReadToken": self.repo_read_token,
             "repoUrl": self.repo_url,
             "commitSha": self.commit_sha,
         }
+        
+        if run_attempt:
+            try:
+                payload["runAttempt"] = int(run_attempt)
+            except ValueError:
+                logger.warning(f"Invalid GITHUB_RUN_ATTEMPT value: {run_attempt}")
+        
+        return payload
     
     @retry(
         stop=stop_after_attempt(3),
