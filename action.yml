@@ -6,14 +6,35 @@ branding:
   color: 'blue'
 
 inputs:
+  api-key:
+    description: 'qBraid API Key'
+    required: true
+  repo-read-token:
+    description: 'GitHub token with read access'
+    required: true
   course-json-path:
     description: 'Path to course.json file'
     required: false
     default: 'course.json'
+  article-type:
+    description: 'Type of article (course or blog)'
+    required: false
+    default: 'course'
+  force-duplicate-questions:
+    description: 'Whether to force duplicate questions'
+    required: false
+    default: 'false'
   draft:
     description: 'Whether to create a draft course (true or false)'
     required: false
     default: 'false'
+  mode:
+    description: 'Operation mode: "create" or "update"'
+    required: false
+    default: 'create'
+  course-custom-id:
+    description: 'Custom ID of the course (required if mode is "update")'
+    required: false
 
 outputs:
   course_name:
@@ -21,11 +42,10 @@ outputs:
     value: ${{ steps.validate-course.outputs.course_name }}
   course-custom-id:
     description: 'Custom ID of the deployed course'
-    value: ${{ steps.create-course.outputs.course_custom_id }}
+    value: ${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}
   qbook_url:
     description: 'URL of the deployed course'
     value: ${{ steps.poll-status.outputs.qbook_url }}
-
 
 runs:
   using: "composite"
@@ -74,23 +94,45 @@ runs:
       run: |
         python ${{ github.action_path }}/src/scripts/check_images.py
 
-    - name: Stage 5 - Create course via qBraid API
+    - name: Stage 5a - Create Course
+      if: inputs.mode == 'create'
       id: create-course
       shell: bash
       run: |
-        python ${{ github.action_path }}/src/scripts/create_course.py '${{ inputs.api-key }}' '${{ inputs.repo-read-token }}' '${{ github.server_url }}/${{ github.repository }}' '${{ github.sha }}' '${{ inputs.article-type }}' '${{ inputs.force-duplicate-questions }}'
+        python ${{ github.action_path }}/src/scripts/create_course.py \
+          --api-key '${{ inputs.api-key }}' \
+          --repo-read-token '${{ inputs.repo-read-token }}' \
+          --repo-url '${{ github.server_url }}/${{ github.repository }}' \
+          --commit-sha '${{ github.sha }}' \
+          --article-type '${{ inputs.article-type }}' \
+          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}'
+
+    - name: Stage 5b - Update Course
+      if: inputs.mode == 'update'
+      id: update-course
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/src/scripts/update_course.py \
+          --api-key '${{ inputs.api-key }}' \
+          --course-custom-id '${{ inputs.course-custom-id }}' \
+          --repo-read-token '${{ inputs.repo-read-token }}' \
+          --repo-url '${{ github.server_url }}/${{ github.repository }}' \
+          --commit-sha '${{ github.sha }}' \
+          --article-type '${{ inputs.article-type }}' \
+          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}'
 
     - name: Stage 6 - Poll status end point for completion
       id: poll-status
       shell: bash
       run: |
-        python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' '${{ steps.create-course.outputs.course_custom_id }}'
+        COURSE_ID="${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}"
+        python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' "$COURSE_ID"
 
     - name: Create deployment summary
       if: success()
       shell: bash
       run: |
-        cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+        cat >> $GITHUB_STEP_SUMMARY << 'DELIMITER'
         # 🎉 Course Deployment Successful
         
         Your course has been successfully deployed to qBraid!
@@ -102,7 +144,7 @@ runs:
         
         You can now access your course at the qBook URL above.
         
-        EOF
+        DELIMITER
 
     - name: Send notification comment
       if: success()
@@ -114,7 +156,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.course_name }}\``
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: `${{ steps.validate-course.outputs.course_name }}``
             });
           } catch (error) {
             if (error.status === 403) {
