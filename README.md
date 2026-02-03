@@ -1,6 +1,8 @@
-# Deploy Course Action
+# Deploy Course to qBraid [BETA]
 
-A GitHub Action for deploying educational courses to  learning platform with automated validation and secure file upload.
+> **⚠️ Beta Status**: This is a beta release of the qBraid Course Deployment Action. It uses our staging environment and may undergo breaking changes. Not recommended for production use until stable release.
+
+A GitHub Action for deploying educational courses to qBraid learning platform with automated validation and secure file upload.
 
 ## Overview
 
@@ -39,13 +41,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to qBraid
-        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
+        uses: qBraid/upload-course-api@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-**Note:** For production use, pin to a specific version (e.g., `@v0.1.0`) instead of `@latest` for better reproducibility. See [CHANGELOG.md](CHANGELOG.md) for version history.
+**Note:** This is a beta release using staging API. For production use, wait for stable release. Pin to this specific beta version (`@v0.1.0-beta`) for reproducibility. See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Inputs
 
@@ -80,12 +82,32 @@ This action validates your course structure and creates it via the qBraid API:
 
 This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes.
 
-**Current Version:** `0.1.0`
+**Current Version:** `v0.1.0-beta`
 
 **Recommended Usage:**
-- Production: Pin to a specific version (e.g., `@v0.1.0`)
+- Beta Testing: Pin to `@v0.1.0-beta`
 - Development: Use `@main` or a specific commit SHA
-- Latest: Use `@latest` (not recommended for production)
+- Production: Wait for stable release before use
+- Local Testing: Use `@main` with `QBRAID_API_BASE_URL` override
+
+## Beta Status & Limitations
+
+### Current Beta Status
+- **Environment**: Uses qBraid staging API (`api-staging.qbraid.com`)
+- **Stability**: May undergo breaking changes
+- **Production Use**: Not recommended until stable release
+- **Support**: Community feedback encouraged
+
+### Known Limitations
+- Staging environment may have rate limits
+- Data persistence not guaranteed in staging
+- Some features may be in development
+- Performance may differ from production
+
+### Feedback & Issues
+Please report issues and provide feedback:
+- [GitHub Issues](https://github.com/qBraid/upload-course-api/issues)
+- Include "BETA" in issue title for prioritization
 
 ## Security
 

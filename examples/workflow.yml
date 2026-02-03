@@ -21,7 +21,7 @@ jobs:
 
       - name: Deploy to qBraid
         id: deploy
-        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
+        uses: qBraid/upload-course-api@v0.1.0-beta
         with:
           # Required: Your qBraid API Key (stored in repository secrets)
           api-key: ${{ secrets.QBRAID_API_KEY }}

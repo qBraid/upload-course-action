@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v0.1.0-beta] - 2026-01-30
+
+### Beta Release
+- Initial beta release for GitHub Marketplace testing
+- Uses qBraid staging API environment
+- Ready for early adopters and testing
+- Full deployment pipeline implemented
+- Security scanning and validation included
+
+### Environment
+- **API Endpoint**: `api-staging.qbraid.com`
+- **Status**: Beta - Not for production use
+- **Support**: Community feedback encouraged
+
+### Usage
+```yaml
+uses: qBraid/upload-course-api@v0.1.0-beta
+```
+
 ## [Unreleased]
 
 ### Added
@@ -22,7 +41,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved test organization with markers and shared fixtures
 - Enhanced Makefile with coverage commands
 
-## [0.1.0] - 2026-01-XX
+## [Unreleased]
+### Planned for v1.0.0 (Stable)
+- Production API integration
+- Performance optimizations
+- Additional user feedback improvements
+- Full documentation updates
+
+## [0.1.0-beta] - 2026-01-30
 
 ### Added
 - Initial release of Deploy Course Action
@@ -44,5 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Secure repository access via GitHub tokens
 - No credentials stored in action code
 
-[Unreleased]: https://github.com/courseBuilderNelson/UploadActionRepo/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/courseBuilderNelson/UploadActionRepo/releases/tag/v0.1.0
+[v1.0.0]: https://github.com/qBraid/upload-course-api/releases/tag/v1.0.0 (planned)
+
+[Unreleased]: https://github.com/qBraid/upload-course-api/compare/v0.1.0-beta...HEAD
+[v0.1.0-beta]: https://github.com/qBraid/upload-course-api/releases/tag/v0.1.0-beta
