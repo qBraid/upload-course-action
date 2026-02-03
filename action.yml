@@ -156,7 +156,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: `${{ steps.validate-course.outputs.course_name }}``
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.course_name }}\``
             });
           } catch (error) {
             if (error.status === 403) {
