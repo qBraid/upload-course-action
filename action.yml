@@ -137,6 +137,7 @@ runs:
         Your course has been successfully deployed to qBraid!
         
         **Course Name:** ${{ steps.validate-course.outputs.course_name }}
+        **Course Custom ID:** ${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}
         **qBook URL:** ${{ steps.poll-status.outputs.qbook_url }}
         
         ## Next Steps
@@ -155,7 +156,7 @@ runs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.course_name }}\``
+              body: `🎓 **Course Deployment Complete!**\n\nYour course is now live on qBraid.\n\n**View your course:** ${{ steps.poll-status.outputs.qbook_url }}\n\nCourse name: \`${{ steps.validate-course.outputs.course_name }}\`\n\nCourse Custom ID: \`${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}\``
             });
           } catch (error) {
             if (error.status === 403) {
