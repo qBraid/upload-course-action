@@ -11,6 +11,7 @@ from deploy_common import (
     validate_article_type,
     validate_boolean,
     validate_commit_sha,
+    validate_course_id,
     validate_repo_token,
     validate_repo_url,
 )
@@ -18,12 +19,13 @@ from deploy_common import (
 logger = setup_logging(__name__)
 
 
-class CourseCreator(CourseDeployer):
-    """Handles course creation on qBraid."""
+class CourseUpdater(CourseDeployer):
+    """Handles course update on qBraid."""
 
     def __init__(
         self,
         api_key: str,
+        course_custom_id: str,
         repo_read_token: str,
         repo_url: str,
         commit_sha: str,
@@ -33,6 +35,7 @@ class CourseCreator(CourseDeployer):
         super().__init__(
             api_key, repo_read_token, repo_url, commit_sha, force_duplicate_questions
         )
+        self.course_custom_id = course_custom_id
         try:
             self.article_type = ArticleType(article_type)
         except ValueError:
@@ -42,26 +45,33 @@ class CourseCreator(CourseDeployer):
             self.article_type = ArticleType.COURSE
 
     def run(self) -> None:
-        """Creates a course on qBraid using the API."""
-        logger.info(f"Creating article of type: {self.article_type.value}")
+        """Updates a course on qBraid using the API."""
+        logger.info(
+            f"Updating article: {self.course_custom_id} (type: {self.article_type.value})"
+        )
 
-        url = f"/learn/articles/{self.article_type.value}/ingest"
+        # Taking a best guess at the update endpoint based on the creates endpoint structure
+        # Create: /learn/articles/{type}/ingest
+        # Update: /learn/articles/{type}/{id}
+        url = f"/learn/articles/{self.article_type.value}/{self.course_custom_id}"
+
         headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
         payload = self.get_common_payload()
 
         try:
-            response = self.make_request("POST", url, headers, payload)
+            response = self.make_request("PUT", url, headers, payload)
             self.handle_response(
-                response, "✅ Course created successfully via qBraid API"
+                response, f"✅ Course {self.course_custom_id} updated successfully"
             )
         except Exception as e:
             if isinstance(e, ActionError):
                 raise
-            raise ActionError(f"Unexpected error creating course: {e}")
+            raise ActionError(f"Unexpected error updating course: {e}")
 
 
-def create_course(
+def update_course(
     api_key: str,
+    course_custom_id: str,
     repo_read_token: str,
     repo_url: str,
     commit_sha: str,
@@ -69,8 +79,9 @@ def create_course(
     force_duplicate_questions: bool = True,
 ):
     """Wrapper for execution."""
-    creator = CourseCreator(
+    updater = CourseUpdater(
         api_key,
+        course_custom_id,
         repo_read_token,
         repo_url,
         commit_sha,
@@ -78,16 +89,17 @@ def create_course(
         force_duplicate_questions,
     )
     try:
-        creator.run()
+        updater.run()
     except ActionError as e:
         logger.error(str(e))
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create a course on qBraid")
+    parser = argparse.ArgumentParser(description="Update a course on qBraid")
 
     parser.add_argument("--api-key", required=True, type=validate_api_key)
+    parser.add_argument("--course-custom-id", required=True, type=validate_course_id)
     parser.add_argument("--repo-read-token", required=True, type=validate_repo_token)
     parser.add_argument("--repo-url", required=True, type=validate_repo_url)
     parser.add_argument("--commit-sha", required=True, type=validate_commit_sha)
@@ -98,8 +110,9 @@ if __name__ == "__main__":
 
     try:
         args = parser.parse_args()
-        create_course(
+        update_course(
             args.api_key,
+            args.course_custom_id,
             args.repo_read_token,
             args.repo_url,
             args.commit_sha,

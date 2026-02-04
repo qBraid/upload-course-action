@@ -1,0 +1,47 @@
+name: Changelog Guard
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  changelog-check:
+    name: Require changelog updates
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Detect changed files
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changelog:
+              - "CHANGELOG.md"
+            code:
+              - "action.yml"
+              - "src/**"
+              - "scripts/**"
+              - "test/**"
+              - "pyproject.toml"
+              - "Makefile"
+              - ".pylintrc"
+              - "uv.lock"
+              - ".github/workflows/**"
+
+      - name: Fail if changelog is missing
+        if: steps.filter.outputs.code == 'true' && steps.filter.outputs.changelog != 'true'
+        run: |
+          echo "Code changes were detected without updating CHANGELOG.md."
+          echo "Please add an entry to the Unreleased section in CHANGELOG.md."
+          exit 1

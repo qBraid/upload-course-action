@@ -1,0 +1,108 @@
+name: Test and Quality Checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint and Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra test
+
+      - name: Check Black formatting
+        run: uv run black --check src/scripts test
+
+      - name: Check import sorting
+        run: uv run isort --check-only src/scripts test
+
+      - name: Run Pylint
+        run: uv run pylint src/scripts --rcfile=.pylintrc --fail-under=7.0
+
+      - name: Validate copyright headers
+        run: |
+          HEADER_PATTERN="# Copyright (C)"
+          MISSING_HEADERS=0
+          while IFS= read -r file; do
+            if ! head -1 "$file" | grep -q "$HEADER_PATTERN"; then
+              echo "Missing header in: $file"
+              MISSING_HEADERS=1
+            fi
+          done < <(find src/scripts -name "*.py" -type f ! -name "__init__.py")
+          if [ "$MISSING_HEADERS" -eq 1 ]; then
+            echo "Some Python files are missing copyright headers."
+            exit 1
+          fi
+
+  spellcheck:
+    name: Spell Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run typo checks
+        uses: crate-ci/typos@v1
+
+  tests:
+    name: Pytest (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install test dependencies
+        run: uv sync --extra test
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Upload coverage artifacts
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage.xml
+            htmlcov
+
+  action-metadata:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1.7.10
