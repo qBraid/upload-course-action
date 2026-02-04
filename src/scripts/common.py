@@ -30,8 +30,8 @@ class Config:
     DEFAULT_API_BASE_URL: str = "https://api-staging.qbraid.com/api/v1"
     API_BASE_URL: str = os.getenv("QBRAID_API_BASE_URL", DEFAULT_API_BASE_URL)
     REQUEST_TIMEOUT_SECONDS: int = 5
-    MAX_POLL_ATTEMPTS: int = 5
-    POLL_INTERVAL_SECONDS: int = 10
+    MAX_POLL_ATTEMPTS: int = 10
+    POLL_INTERVAL_SECONDS: int = 15
     MAX_CONSECUTIVE_ERRORS: int = 5
 
     # Validation Configuration
