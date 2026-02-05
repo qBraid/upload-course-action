@@ -18,7 +18,7 @@ def test_config_default():
             import common
 
         assert common.Config.API_BASE_URL == "https://api-staging.qbraid.com/api/v1"
-        assert common.Config.MAX_POLL_ATTEMPTS == 10
+        assert common.Config.MAX_POLL_ATTEMPTS == 15
         assert common.Config.POLL_INTERVAL_SECONDS == 15
         assert common.Config.MAX_CONSECUTIVE_ERRORS == 5
 
@@ -71,6 +71,6 @@ def test_config_polling_env_overrides():
         import common
 
         importlib.reload(common)
-        assert common.Config.MAX_POLL_ATTEMPTS == 10
+        assert common.Config.MAX_POLL_ATTEMPTS == 15
         assert common.Config.POLL_INTERVAL_SECONDS == 15
         assert common.Config.MAX_CONSECUTIVE_ERRORS == 5

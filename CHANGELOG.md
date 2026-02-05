@@ -46,6 +46,7 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 - Added configurable polling controls via environment variables:
   `QBRAID_MAX_POLL_ATTEMPTS`, `QBRAID_POLL_INTERVAL_SECONDS`,
   and `QBRAID_MAX_CONSECUTIVE_ERRORS`
+- Updated default `QBRAID_MAX_POLL_ATTEMPTS` to `15`
 - Documented polling environment configuration in `README.md` and `WORKFLOW_GUIDE.md`
 
 ## [Unreleased]
