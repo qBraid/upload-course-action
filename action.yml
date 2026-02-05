@@ -28,6 +28,18 @@ inputs:
     description: 'Whether to create a draft course (true or false)'
     required: false
     default: 'false'
+  max-poll-attempts:
+    description: 'Maximum polling attempts before timing out'
+    required: false
+    default: '20'
+  poll-interval-seconds:
+    description: 'Seconds to wait between polling attempts'
+    required: false
+    default: '15'
+  max-consecutive-errors:
+    description: 'Maximum consecutive polling errors before failing'
+    required: false
+    default: '5'
   mode:
     description: 'Operation mode: "create" or "update"'
     required: false
@@ -123,6 +135,10 @@ runs:
     - name: Stage 6 - Poll status end point for completion
       id: poll-status
       shell: bash
+      env:
+        QBRAID_MAX_POLL_ATTEMPTS: ${{ inputs.max-poll-attempts }}
+        QBRAID_POLL_INTERVAL_SECONDS: ${{ inputs.poll-interval-seconds }}
+        QBRAID_MAX_CONSECUTIVE_ERRORS: ${{ inputs.max-consecutive-errors }}
       run: |
         COURSE_ID="${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}"
         python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' "$COURSE_ID"
