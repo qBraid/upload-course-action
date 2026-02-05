@@ -59,6 +59,15 @@ jobs:
 | `article-type` | Type of article to create (`course` or `blog`) | No | `course` |
 | `force-duplicate-questions` | Whether to force upload duplicate questions (`true` or `false`) | No | `false` |
 
+## Optional Environment Variables
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `QBRAID_API_BASE_URL` | Override the qBraid API base URL (useful for local/dev testing) | `https://api-staging.qbraid.com/api/v1` |
+| `QBRAID_MAX_POLL_ATTEMPTS` | Maximum polling attempts before timing out | `10` |
+| `QBRAID_POLL_INTERVAL_SECONDS` | Seconds to wait between polling attempts | `15` |
+| `QBRAID_MAX_CONSECUTIVE_ERRORS` | Maximum consecutive polling request errors before failing | `5` |
+
 ## Outputs
 
 | Output | Description |
@@ -126,6 +135,7 @@ This action implements several security measures:
 ### Configuration Security
 - API base URL can be overridden via `QBRAID_API_BASE_URL` environment variable for testing
 - Default production URL: `https://api.qbraid.com`
+- Polling behavior can be tuned using `QBRAID_MAX_POLL_ATTEMPTS`, `QBRAID_POLL_INTERVAL_SECONDS`, and `QBRAID_MAX_CONSECUTIVE_ERRORS`
 - Timeouts on all API requests prevent hanging operations
 
 ### Best Practices

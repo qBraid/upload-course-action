@@ -18,6 +18,9 @@ def test_config_default():
             import common
 
         assert common.Config.API_BASE_URL == "https://api-staging.qbraid.com/api/v1"
+        assert common.Config.MAX_POLL_ATTEMPTS == 10
+        assert common.Config.POLL_INTERVAL_SECONDS == 15
+        assert common.Config.MAX_CONSECUTIVE_ERRORS == 5
 
 
 @pytest.mark.unit
@@ -33,3 +36,41 @@ def test_config_env_override():
             import common
 
         assert common.Config.API_BASE_URL == test_url
+
+
+@pytest.mark.unit
+def test_config_polling_env_overrides():
+    """Test polling env var overrides and fallback behavior."""
+    with mock.patch.dict(
+        os.environ,
+        {
+            "QBRAID_MAX_POLL_ATTEMPTS": "20",
+            "QBRAID_POLL_INTERVAL_SECONDS": "30",
+            "QBRAID_MAX_CONSECUTIVE_ERRORS": "7",
+        },
+    ):
+        if "common" in sys.modules:
+            import common
+
+            importlib.reload(common)
+        else:
+            import common
+
+        assert common.Config.MAX_POLL_ATTEMPTS == 20
+        assert common.Config.POLL_INTERVAL_SECONDS == 30
+        assert common.Config.MAX_CONSECUTIVE_ERRORS == 7
+
+    with mock.patch.dict(
+        os.environ,
+        {
+            "QBRAID_MAX_POLL_ATTEMPTS": "invalid",
+            "QBRAID_POLL_INTERVAL_SECONDS": "-1",
+            "QBRAID_MAX_CONSECUTIVE_ERRORS": "0",
+        },
+    ):
+        import common
+
+        importlib.reload(common)
+        assert common.Config.MAX_POLL_ATTEMPTS == 10
+        assert common.Config.POLL_INTERVAL_SECONDS == 15
+        assert common.Config.MAX_CONSECUTIVE_ERRORS == 5

@@ -167,6 +167,27 @@ The workflow validates image references in markdown cells. Images can be referen
 - Ensure your API key has permissions to upload files.
 - Check if the file paths contain special characters that might cause issues.
 
+### Polling times out
+- Increase polling controls in workflow `env` if processing takes longer in staging.
+
+Example:
+
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      QBRAID_MAX_POLL_ATTEMPTS: "20"
+      QBRAID_POLL_INTERVAL_SECONDS: "30"
+      QBRAID_MAX_CONSECUTIVE_ERRORS: "7"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: qBraid/upload-course-api@v0.1.0-beta
+        with:
+          api-key: ${{ secrets.QBRAID_API_KEY }}
+          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ## Support
 
 For issues related to:
