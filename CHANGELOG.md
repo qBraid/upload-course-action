@@ -27,6 +27,7 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 ## [Unreleased]
 
 ### Added
+- Action inputs to configure polling limits (`max-poll-attempts`, `poll-interval-seconds`, `max-consecutive-errors`)
 - Comprehensive pytest testing infrastructure with unit and E2E tests
 - Test markers for easy filtering (`@pytest.mark.unit`, `@pytest.mark.e2e`)
 - Shared test fixtures in `test/conftest.py` for mocking and GitHub Actions simulation
@@ -40,6 +41,7 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 - Typos configuration file to ignore generated artifacts and allow project-specific terms (`qbraid`, `qbook`)
 
 ### Changed
+- Increased default polling attempts to 20 (from 10)
 - Updated test infrastructure to use pytest exclusively
 - Improved test organization with markers and shared fixtures
 - Enhanced Makefile with coverage commands
