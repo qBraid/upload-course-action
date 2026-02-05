@@ -44,8 +44,8 @@ class Config:
     DEFAULT_API_BASE_URL: str = "https://api-staging.qbraid.com/api/v1"
     # DEFAULT_API_BASE_URL: str = "https://ad78f4d43151.ngrok-free.app/app1/api/v1"
     API_BASE_URL: str = os.getenv("QBRAID_API_BASE_URL", DEFAULT_API_BASE_URL)
-    MAX_POLL_ATTEMPTS: int = _get_env_int("QBRAID_MAX_POLL_ATTEMPTS", 20)
     REQUEST_TIMEOUT_SECONDS: int = _get_env_int("QBRAID_REQUEST_TIMEOUT_SECONDS", 30)
+    MAX_POLL_ATTEMPTS: int = _get_env_int("QBRAID_MAX_POLL_ATTEMPTS", 20)
     POLL_INTERVAL_SECONDS: int = _get_env_int("QBRAID_POLL_INTERVAL_SECONDS", 15)
     MAX_CONSECUTIVE_ERRORS: int = _get_env_int("QBRAID_MAX_CONSECUTIVE_ERRORS", 5)
 
