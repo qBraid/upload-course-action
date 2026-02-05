@@ -67,6 +67,7 @@ jobs:
 | `QBRAID_MAX_POLL_ATTEMPTS` | Maximum polling attempts before timing out | `15` |
 | `QBRAID_POLL_INTERVAL_SECONDS` | Seconds to wait between polling attempts | `15` |
 | `QBRAID_MAX_CONSECUTIVE_ERRORS` | Maximum consecutive polling request errors before failing | `5` |
+| `QBRAID_REQUEST_TIMEOUT_SECONDS` | HTTP request timeout for qBraid API calls | `30` |
 
 ## Outputs
 
@@ -136,6 +137,8 @@ This action implements several security measures:
 - API base URL can be overridden via `QBRAID_API_BASE_URL` environment variable for testing
 - Default production URL: `https://api.qbraid.com`
 - Polling behavior can be tuned using `QBRAID_MAX_POLL_ATTEMPTS`, `QBRAID_POLL_INTERVAL_SECONDS`, and `QBRAID_MAX_CONSECUTIVE_ERRORS`
+- Default API base URL: `https://api-staging.qbraid.com/api/v1`
+- Request timeout can be configured via `QBRAID_REQUEST_TIMEOUT_SECONDS` (must be a positive integer)
 - Timeouts on all API requests prevent hanging operations
 
 ### Best Practices
