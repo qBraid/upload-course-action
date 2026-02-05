@@ -22,6 +22,20 @@ def setup_logging(name: str) -> logging.Logger:
     return logger
 
 
+def _get_env_int(name: str, default: int) -> int:
+    """Parse a positive integer from env vars, falling back to default."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+        if parsed > 0:
+            return parsed
+    except ValueError:
+        pass
+    return default
+
+
 @dataclass(frozen=True)
 class Config:
     """Application configuration constants."""
@@ -30,7 +44,7 @@ class Config:
     DEFAULT_API_BASE_URL: str = "https://api-staging.qbraid.com/api/v1"
     # DEFAULT_API_BASE_URL: str = "https://ad78f4d43151.ngrok-free.app/app1/api/v1"
     API_BASE_URL: str = os.getenv("QBRAID_API_BASE_URL", DEFAULT_API_BASE_URL)
-    REQUEST_TIMEOUT_SECONDS: int = 5
+    REQUEST_TIMEOUT_SECONDS: int = _get_env_int("QBRAID_REQUEST_TIMEOUT_SECONDS", 30)
     MAX_POLL_ATTEMPTS: int = 10
     POLL_INTERVAL_SECONDS: int = 15
     MAX_CONSECUTIVE_ERRORS: int = 5

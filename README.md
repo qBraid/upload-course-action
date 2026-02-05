@@ -59,6 +59,13 @@ jobs:
 | `article-type` | Type of article to create (`course` or `blog`) | No | `course` |
 | `force-duplicate-questions` | Whether to force upload duplicate questions (`true` or `false`) | No | `false` |
 
+## Optional Environment Variables
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `QBRAID_API_BASE_URL` | Override the qBraid API base URL (useful for local/dev testing) | `https://api-staging.qbraid.com/api/v1` |
+| `QBRAID_REQUEST_TIMEOUT_SECONDS` | HTTP request timeout for qBraid API calls | `30` |
+
 ## Outputs
 
 | Output | Description |
@@ -125,7 +132,8 @@ This action implements several security measures:
 
 ### Configuration Security
 - API base URL can be overridden via `QBRAID_API_BASE_URL` environment variable for testing
-- Default production URL: `https://api.qbraid.com`
+- Default API base URL: `https://api-staging.qbraid.com/api/v1`
+- Request timeout can be configured via `QBRAID_REQUEST_TIMEOUT_SECONDS` (must be a positive integer)
 - Timeouts on all API requests prevent hanging operations
 
 ### Best Practices
