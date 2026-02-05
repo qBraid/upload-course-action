@@ -18,6 +18,7 @@ def test_config_default():
             import common
 
         assert common.Config.API_BASE_URL == "https://api-staging.qbraid.com/api/v1"
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 30
 
 
 @pytest.mark.unit
@@ -33,3 +34,23 @@ def test_config_env_override():
             import common
 
         assert common.Config.API_BASE_URL == test_url
+
+
+@pytest.mark.unit
+def test_config_timeout_env_override():
+    """Test timeout env var override and fallback behavior."""
+    with mock.patch.dict(os.environ, {"QBRAID_REQUEST_TIMEOUT_SECONDS": "60"}):
+        if "common" in sys.modules:
+            import common
+
+            importlib.reload(common)
+        else:
+            import common
+
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 60
+
+    with mock.patch.dict(os.environ, {"QBRAID_REQUEST_TIMEOUT_SECONDS": "invalid"}):
+        import common
+
+        importlib.reload(common)
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 30
