@@ -136,9 +136,9 @@ runs:
       id: poll-status
       shell: bash
       env:
-        QBRAID_MAX_POLL_ATTEMPTS: ${{ inputs.max-poll-attempts }}
-        QBRAID_POLL_INTERVAL_SECONDS: ${{ inputs.poll-interval-seconds }}
-        QBRAID_MAX_CONSECUTIVE_ERRORS: ${{ inputs.max-consecutive-errors }}
+        QBRAID_MAX_POLL_ATTEMPTS: ${{ env.QBRAID_MAX_POLL_ATTEMPTS || inputs.max-poll-attempts }}
+        QBRAID_POLL_INTERVAL_SECONDS: ${{ env.QBRAID_POLL_INTERVAL_SECONDS || inputs.poll-interval-seconds }}
+        QBRAID_MAX_CONSECUTIVE_ERRORS: ${{ env.QBRAID_MAX_CONSECUTIVE_ERRORS || inputs.max-consecutive-errors }}
       run: |
         COURSE_ID="${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}"
         python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' "$COURSE_ID"
