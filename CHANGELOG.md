@@ -45,6 +45,14 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 - Updated test infrastructure to use pytest exclusively
 - Improved test organization with markers and shared fixtures
 - Enhanced Makefile with coverage commands
+- Added configurable polling controls via environment variables:
+  `QBRAID_MAX_POLL_ATTEMPTS`, `QBRAID_POLL_INTERVAL_SECONDS`,
+  and `QBRAID_MAX_CONSECUTIVE_ERRORS`
+- Updated default `QBRAID_MAX_POLL_ATTEMPTS` to `15`
+- Documented polling environment configuration in `README.md` and `WORKFLOW_GUIDE.md`
+- Increased default qBraid API request timeout from 5s to 30s for course deployment steps
+- Added configurable request timeout via `QBRAID_REQUEST_TIMEOUT_SECONDS` (positive integer)
+- Documented timeout/environment configuration in `README.md` and `WORKFLOW_GUIDE.md`
 
 ## [Unreleased]
 ### Planned for v1.0.0 (Stable)

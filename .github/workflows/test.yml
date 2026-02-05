@@ -97,6 +97,16 @@ jobs:
             coverage.xml
             htmlcov
 
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: upload-course-api
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   action-metadata:
     name: Actionlint
     runs-on: ubuntu-latest
