@@ -21,7 +21,7 @@ def test_config_default():
         assert common.Config.MAX_POLL_ATTEMPTS == 15
         assert common.Config.POLL_INTERVAL_SECONDS == 15
         assert common.Config.MAX_CONSECUTIVE_ERRORS == 5
-        assert common.Config.REQUEST_TIMEOUT_SECONDS == 30
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 5
 
 
 @pytest.mark.unit
@@ -50,9 +50,6 @@ def test_config_polling_env_overrides():
             "QBRAID_MAX_CONSECUTIVE_ERRORS": "7",
         },
     ):
-def test_config_timeout_env_override():
-    """Test timeout env var override and fallback behavior."""
-    with mock.patch.dict(os.environ, {"QBRAID_REQUEST_TIMEOUT_SECONDS": "60"}):
         if "common" in sys.modules:
             import common
 
@@ -63,6 +60,7 @@ def test_config_timeout_env_override():
         assert common.Config.MAX_POLL_ATTEMPTS == 20
         assert common.Config.POLL_INTERVAL_SECONDS == 30
         assert common.Config.MAX_CONSECUTIVE_ERRORS == 7
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 5
 
     with mock.patch.dict(
         os.environ,
@@ -78,10 +76,24 @@ def test_config_timeout_env_override():
         assert common.Config.MAX_POLL_ATTEMPTS == 15
         assert common.Config.POLL_INTERVAL_SECONDS == 15
         assert common.Config.MAX_CONSECUTIVE_ERRORS == 5
-        assert common.Config.REQUEST_TIMEOUT_SECONDS == 60
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 5
+
+
+@pytest.mark.unit
+def test_config_timeout_env_override():
+    """Test timeout remains fixed even when env var is set."""
+    with mock.patch.dict(os.environ, {"QBRAID_REQUEST_TIMEOUT_SECONDS": "60"}):
+        if "common" in sys.modules:
+            import common
+
+            importlib.reload(common)
+        else:
+            import common
+
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 5
 
     with mock.patch.dict(os.environ, {"QBRAID_REQUEST_TIMEOUT_SECONDS": "invalid"}):
         import common
 
         importlib.reload(common)
-        assert common.Config.REQUEST_TIMEOUT_SECONDS == 30
+        assert common.Config.REQUEST_TIMEOUT_SECONDS == 5
