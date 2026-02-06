@@ -71,3 +71,14 @@ class TestProgressPoller:
         assert mock_fetch.call_count == 1
         # Should not sleep since we exit immediately
         assert mock_sleep.call_count == 0
+
+    def test_normalize_qbook_url_legacy_format(self):
+        url = "https://qbook-staging.qbraid.com/learn/?article=abc&file=def"
+        assert (
+            ProgressPoller.normalize_qbook_url(url)
+            == "https://qbook-staging.qbraid.com/learn/course/abc/def"
+        )
+
+    def test_normalize_qbook_url_non_legacy(self):
+        url = "https://qbook-staging.qbraid.com/learn/course/abc/def"
+        assert ProgressPoller.normalize_qbook_url(url) == url

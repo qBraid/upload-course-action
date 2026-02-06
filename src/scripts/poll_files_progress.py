@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+from urllib.parse import parse_qs, urlparse, urlunparse
 from enum import Enum
 from typing import Any, Dict
 
@@ -49,6 +50,22 @@ class ProgressPoller:
         self.session = QbraidSessionV1(api_key=api_key)
         self.session.base_url = Config.API_BASE_URL
 
+    @staticmethod
+    def normalize_qbook_url(url: str) -> str:
+        """Normalize legacy qBook URLs to /learn/course/{articleId}/{fileId}."""
+        try:
+            parsed = urlparse(url)
+            qs = parse_qs(parsed.query)
+            article_id = qs.get("article", [None])[0]
+            file_id = qs.get("file", [None])[0]
+            if article_id and file_id and parsed.path.rstrip("/") in ("/learn", "/learn/"):
+                new_path = f"/learn/course/{article_id}/{file_id}"
+                normalized = parsed._replace(path=new_path, query="", fragment="")
+                return urlunparse(normalized)
+        except Exception:
+            return url
+        return url
+
     @retry(
         stop=stop_after_attempt(Config.MAX_CONSECUTIVE_ERRORS),
         wait=wait_fixed(3),  # Short retry wait to distinguish from polling interval
@@ -81,7 +98,7 @@ class ProgressPoller:
 
                 # Check for qBook URL (success indicator)
                 if "qbookUrl" in data:
-                    qbook_url = data["qbookUrl"]
+                    qbook_url = self.normalize_qbook_url(str(data["qbookUrl"]))
                     logger.info("✅ Course processing complete!")
                     logger.info(f"qBook URL: {qbook_url}")
 
