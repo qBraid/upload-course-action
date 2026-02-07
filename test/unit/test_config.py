@@ -17,7 +17,7 @@ def test_config_default():
         else:
             import common
 
-        assert common.Config.API_BASE_URL == "https://api-staging.qbraid.com/api/v1"
+        assert common.Config.API_BASE_URL == "https://api-v2.qbraid.com/api/v1"
         assert common.Config.MAX_POLL_ATTEMPTS == 20
         assert common.Config.POLL_INTERVAL_SECONDS == 15
         assert common.Config.MAX_CONSECUTIVE_ERRORS == 5

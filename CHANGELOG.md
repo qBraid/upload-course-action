@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security scanning and validation included
 
 ### Environment
-- **API Endpoint**: `api-staging.qbraid.com`
+- **API Endpoint**: `api-v2.qbraid.com`
 - **Status**: Beta - Not for production use
 - **Support**: Community feedback encouraged
 
