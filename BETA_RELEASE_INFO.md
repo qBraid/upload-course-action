@@ -6,7 +6,7 @@ This is a **beta release** of the qBraid Course Deployment GitHub Action. Please
 
 ### 🚨 Important Beta Notices
 
-- **Environment**: Uses qBraid staging API (`api-staging.qbraid.com`)
+- **Environment**: Uses qBraid staging API (`api-v2.qbraid.com`)
 - **Stability**: May undergo breaking changes without notice
 - **Production Use**: **NOT RECOMMENDED** until stable release
 - **Data Persistence**: Staging environment data may be cleared periodically
