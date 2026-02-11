@@ -143,6 +143,18 @@ runs:
         COURSE_ID="${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}"
         python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' "$COURSE_ID"
 
+    - name: Cancel Course Operation
+      if: cancelled()
+      shell: bash
+      run: |
+        COURSE_ID="${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}"
+        if [[ -n "$COURSE_ID" ]]; then
+          echo "Cancelling operation for course ID: $COURSE_ID"
+          python ${{ github.action_path }}/src/scripts/cancel_course.py \
+            --api-key '${{ inputs.api-key }}' \
+            "$COURSE_ID"
+        fi
+
     - name: Create deployment summary
       if: success()
       shell: bash
