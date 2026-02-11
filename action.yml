@@ -141,6 +141,10 @@ runs:
         QBRAID_MAX_CONSECUTIVE_ERRORS: ${{ inputs.max-consecutive-errors }}
       run: |
         COURSE_ID="${{ steps.create-course.outputs.course_custom_id }}${{ steps.update-course.outputs.course_custom_id }}"
+        if [[ -z "$COURSE_ID" ]]; then
+          echo "::error::course_custom_id output is empty after create/update step. This usually means the API response shape changed or did not include article.customId."
+          exit 1
+        fi
         python ${{ github.action_path }}/src/scripts/poll_files_progress.py '${{ inputs.api-key }}' "$COURSE_ID"
 
     - name: Create deployment summary
