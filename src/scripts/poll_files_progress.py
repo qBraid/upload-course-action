@@ -62,7 +62,11 @@ class ProgressPoller:
         )
         if response.status_code != 200:
             raise requests.RequestException(f"Status code {response.status_code}")
-        return response.json()
+        data = response.json()
+        if isinstance(data, dict) and isinstance(data.get("data"), dict):
+            # Support JSend payloads: {status: "success", data: {...}}.
+            return data["data"]
+        return data
 
     def run(self) -> None:
         """

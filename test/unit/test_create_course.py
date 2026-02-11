@@ -50,6 +50,30 @@ class TestCourseCreator:
         assert args[0] == "POST"
         assert "/learn/articles/course/ingest" in args[1]
 
+    def test_run_success_jsend_response(self):
+        """Test successful course creation with JSend response format."""
+        self.creator.load_course_data = mock.Mock(return_value={"valid": "data"})
+
+        mock_response = mock.Mock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {
+            "status": "success",
+            "data": {"article": {"customId": "course-456"}},
+        }
+        self.creator.session.request.return_value = mock_response
+
+        self.creator.run()
+
+        self.creator.session.request.assert_called_once()
+        args, kwargs = self.creator.session.request.call_args
+
+        payload = json.loads(kwargs["data"])
+        assert payload["repoReadToken"] == self.token
+        assert payload["forceDuplicateQuestions"] is True
+        assert kwargs["headers"]["X-API-Key"] == self.api_key
+        assert args[0] == "POST"
+        assert "/learn/articles/course/ingest" in args[1]
+
     def test_run_failure(self):
         """Test failure scenario."""
         self.creator.load_course_data = mock.Mock(return_value={"course": "data"})

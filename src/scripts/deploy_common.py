@@ -185,13 +185,20 @@ class CourseDeployer:
             logger.info(success_message)
             try:
                 resp_json = response.json()
-                course_id = resp_json.get("article", {}).get("customId")
+                # Support both legacy payloads ({article: {...}})
+                # and JSend payloads ({status: "success", data: {article: {...}}}).
+                payload = resp_json.get("data", resp_json)
+                course_id = payload.get("article", {}).get("customId")
                 if course_id:
                     logger.info(f"Course ID: {course_id}")
                     write_github_output("course_name", str(course_id))
                     write_github_output("course_custom_id", str(course_id))
+                else:
+                    logger.warning(
+                        "Course created/updated but customId was not found in response payload."
+                    )
             except Exception:
-                pass
+                logger.warning("Could not parse API response JSON for course customId.")
         else:
             try:
                 logger.error(f"Response: {response.text}")
