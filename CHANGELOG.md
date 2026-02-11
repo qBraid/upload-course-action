@@ -26,7 +26,13 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 
 ## [Unreleased]
 
+### Fixed
+- Fixed JSend response parsing in deploy and polling scripts to support `{status, data}` envelope format
+- Added guard in `action.yml` to fail early with a clear error when `course_custom_id` is empty after create/update step
+- Replaced silent `pass` with warning logs when API response parsing fails
+
 ### Added
+- Unit tests for JSend response handling in course creation and polling
 - Action inputs to configure polling limits (`max-poll-attempts`, `poll-interval-seconds`, `max-consecutive-errors`)
 - Comprehensive pytest testing infrastructure with unit and E2E tests
 - Test markers for easy filtering (`@pytest.mark.unit`, `@pytest.mark.e2e`)
