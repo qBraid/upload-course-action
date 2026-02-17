@@ -66,6 +66,11 @@ jobs:
   tests:
     name: Pytest (${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      HAS_CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -98,14 +103,28 @@ jobs:
             htmlcov
 
       - name: Upload coverage to Codecov
-        if: matrix.python-version == '3.11'
+        if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN == 'true'
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
           flags: unittests
           name: upload-course-api
-          fail_ci_if_error: false
+          fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage to Codecov (OIDC fallback)
+        if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN != 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: upload-course-api
+          fail_ci_if_error: true
+          use_oidc: true
+
+      - name: Skip Codecov upload for fork PR without token
+        if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN != 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+        run: echo "Skipping Codecov upload on forked PR because CODECOV_TOKEN is unavailable and OIDC is not permitted."
 
   action-metadata:
     name: Actionlint
