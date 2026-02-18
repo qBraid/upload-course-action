@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to qBraid
-        uses: qBraid/upload-course-api@v0.1.0-beta
+        uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
@@ -119,7 +119,7 @@ This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.
 
 ### Feedback & Issues
 Please report issues and provide feedback:
-- [GitHub Issues](https://github.com/qBraid/upload-course-api/issues)
+- [GitHub Issues](https://github.com/qBraid/upload-course-action/issues)
 - Include "BETA" in issue title for prioritization
 
 ## Security

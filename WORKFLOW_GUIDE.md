@@ -178,7 +178,7 @@ jobs:
       QBRAID_REQUEST_TIMEOUT_SECONDS: "60"
     steps:
       - uses: actions/checkout@v6
-      - uses: qBraid/upload-course-api@v0.1.0-beta
+      - uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
@@ -199,7 +199,7 @@ jobs:
       QBRAID_MAX_CONSECUTIVE_ERRORS: "7"
     steps:
       - uses: actions/checkout@v6
-      - uses: qBraid/upload-course-api@v0.1.0-beta
+      - uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}

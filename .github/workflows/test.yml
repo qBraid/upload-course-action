@@ -108,7 +108,7 @@ jobs:
         with:
           files: ./coverage.xml
           flags: unittests
-          name: upload-course-api
+          name: upload-course-action
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -118,7 +118,7 @@ jobs:
         with:
           files: ./coverage.xml
           flags: unittests
-          name: upload-course-api
+          name: upload-course-action
           fail_ci_if_error: true
           use_oidc: true
 

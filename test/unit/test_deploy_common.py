@@ -12,7 +12,7 @@ class TestCourseDeployer:
         self.deployer = CourseDeployer(
             api_key="key",
             repo_read_token="token",
-            repo_url="https://github.com/qBraid/upload-course-api",
+            repo_url="https://github.com/qBraid/upload-course-action",
             commit_sha="abc1234",
             force_duplicate_questions=False,
         )
@@ -26,7 +26,7 @@ class TestCourseDeployer:
         assert payload["data"] == {"courseName": "Demo"}
         assert payload["forceDuplicateQuestions"] is False
         assert payload["repoReadToken"] == "token"
-        assert payload["repoUrl"] == "https://github.com/qBraid/upload-course-api"
+        assert payload["repoUrl"] == "https://github.com/qBraid/upload-course-action"
         assert payload["commitSha"] == "abc1234"
         assert payload["runAttempt"] == 3
 
