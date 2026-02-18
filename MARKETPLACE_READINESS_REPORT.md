@@ -16,7 +16,7 @@
    - All inputs now properly defined with descriptions and defaults
 
 3. **✅ Repository References Updated**
-   - Fixed all references from `courseBuilderNelson/UploadActionRepo` → `qBraid/upload-course-api`
+   - Fixed all references from `courseBuilderNelson/UploadActionRepo` → `qBraid/upload-course-action`
    - Updated: README.md, examples/*.yml, AGENTS.md, CHANGELOG.md
    - Consistent repository naming across all documentation
 
@@ -74,7 +74,7 @@
 8. Publish release
 
 ### 3. Post-Publishing:
-- [ ] Test action from another repository using `qBraid/upload-course-api@v0.1.0`
+- [ ] Test action from another repository using `qBraid/upload-course-action@v0.1.0`
 - [ ] Verify Marketplace listing appears correctly
 - [ ] Monitor usage and feedback
 
@@ -105,7 +105,7 @@
 
 This GitHub Action is now **fully prepared** for GitHub Marketplace publication and meets all quality standards for a production-ready action. The codebase demonstrates professional development practices and provides significant value to users deploying courses to the qBraid platform.
 
-**Repository**: `qBraid/upload-course-api`  
+**Repository**: `qBraid/upload-course-action`  
 **Version**: `v0.1.0`  
 **License**: MIT  
 **Status**: ✅ MARKETPLACE READY

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Usage
 ```yaml
-uses: qBraid/upload-course-api@v0.1.0-beta
+uses: qBraid/upload-course-action@v0.1.0-beta
 ```
 
 ## [Unreleased]
@@ -91,7 +91,7 @@ uses: qBraid/upload-course-api@v0.1.0-beta
 - Secure repository access via GitHub tokens
 - No credentials stored in action code
 
-[v1.0.0]: https://github.com/qBraid/upload-course-api/releases/tag/v1.0.0 (planned)
+[v1.0.0]: https://github.com/qBraid/upload-course-action/releases/tag/v1.0.0 (planned)
 
-[Unreleased]: https://github.com/qBraid/upload-course-api/compare/v0.1.0-beta...HEAD
-[v0.1.0-beta]: https://github.com/qBraid/upload-course-api/releases/tag/v0.1.0-beta
+[Unreleased]: https://github.com/qBraid/upload-course-action/compare/v0.1.0-beta...HEAD
+[v0.1.0-beta]: https://github.com/qBraid/upload-course-action/releases/tag/v0.1.0-beta

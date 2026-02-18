@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to qBraid (Beta)
-        uses: qBraid/upload-course-api@v0.1.0-beta
+        uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
@@ -69,7 +69,7 @@ jobs:
 
 Please report beta-specific issues:
 
-1. **GitHub Issues**: [Create Issue](https://github.com/qBraid/upload-course-api/issues)
+1. **GitHub Issues**: [Create Issue](https://github.com/qBraid/upload-course-action/issues)
 2. **Label**: Include "BETA" in issue title
 3. **Environment**: Specify you're using staging API
 4. **Details**: Include course.json (sanitized) and workflow steps
@@ -96,10 +96,10 @@ When stable version is released, update your workflows:
 
 ```yaml
 # Before (Beta)
-uses: qBraid/upload-course-api@v0.1.0-beta
+uses: qBraid/upload-course-action@v0.1.0-beta
 
 # After (Stable)
-uses: qBraid/upload-course-api@v1.0.0
+uses: qBraid/upload-course-action@v1.0.0
 ```
 
 ### 🛡️ Security Considerations

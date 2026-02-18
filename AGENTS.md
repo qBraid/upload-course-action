@@ -9,7 +9,7 @@ The Deploy Course Action is a composite GitHub Action that automates the deploym
 ## Action Interface
 
 ### Action Identifier
-- **Repository**: `qBraid/upload-course-api`
+- **Repository**: `qBraid/upload-course-action`
 - **Latest Version**: `@v0.1.0-beta` (beta), `@main` for development
 
 ### Required Inputs
@@ -60,7 +60,7 @@ jobs:
 
       - name: Deploy to qBraid
         id: deploy
-        uses: qBraid/upload-course-api@v0.1.0-beta
+        uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
