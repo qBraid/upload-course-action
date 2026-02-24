@@ -1,8 +1,9 @@
 # Copyright (C) 2026 qBraid
 
 import argparse
+import json
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from common import ActionError, ArticleType, Config, ValidationError, setup_logging
 from deploy_common import (
@@ -10,6 +11,7 @@ from deploy_common import (
     validate_api_key,
     validate_article_type,
     validate_boolean,
+    validate_certificate_settings,
     validate_commit_sha,
     validate_course_id,
     validate_repo_token,
@@ -31,9 +33,15 @@ class CourseUpdater(CourseDeployer):
         commit_sha: str,
         article_type: str = "course",
         force_duplicate_questions: bool = True,
+        certificate_settings: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
-            api_key, repo_read_token, repo_url, commit_sha, force_duplicate_questions
+            api_key,
+            repo_read_token,
+            repo_url,
+            commit_sha,
+            force_duplicate_questions,
+            certificate_settings,
         )
         self.course_custom_id = course_custom_id
         try:
@@ -77,6 +85,7 @@ def update_course(
     commit_sha: str,
     article_type: str = "course",
     force_duplicate_questions: bool = True,
+    certificate_settings: Optional[Dict[str, Any]] = None,
 ):
     """Wrapper for execution."""
     updater = CourseUpdater(
@@ -87,6 +96,7 @@ def update_course(
         commit_sha,
         article_type,
         force_duplicate_questions,
+        certificate_settings,
     )
     try:
         updater.run()
@@ -107,6 +117,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--force-duplicate-questions", required=True, type=validate_boolean
     )
+    parser.add_argument(
+        "--certificate-settings", required=False, type=validate_certificate_settings
+    )
 
     try:
         args = parser.parse_args()
@@ -118,6 +131,7 @@ if __name__ == "__main__":
             args.commit_sha,
             args.article_type,
             args.force_duplicate_questions,
+            args.certificate_settings,
         )
     except (ValidationError, argparse.ArgumentError) as e:
         logger.error(f"Validation error: {e}")

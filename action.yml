@@ -24,6 +24,9 @@ inputs:
     description: 'Whether to force duplicate questions'
     required: false
     default: 'false'
+  certificate-settings:
+    description: 'JSON string for certificate settings (e.g., {"enabled":true,"criteria":{"type":"completion","value":100},"templateId":"default"})'
+    required: false
   draft:
     description: 'Whether to create a draft course (true or false)'
     required: false
@@ -116,7 +119,8 @@ runs:
           --repo-url '${{ github.server_url }}/${{ github.repository }}' \
           --commit-sha '${{ github.sha }}' \
           --article-type '${{ inputs.article-type }}' \
-          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}'
+          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}' \
+          --certificate-settings '${{ inputs.certificate-settings }}'
 
     - name: Stage 5b - Update Course
       if: inputs.mode == 'update'
@@ -130,7 +134,8 @@ runs:
           --repo-url '${{ github.server_url }}/${{ github.repository }}' \
           --commit-sha '${{ github.sha }}' \
           --article-type '${{ inputs.article-type }}' \
-          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}'
+          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}' \
+          --certificate-settings '${{ inputs.certificate-settings }}'
 
     - name: Stage 6 - Poll status end point for completion
       id: poll-status
