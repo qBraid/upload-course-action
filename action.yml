@@ -24,9 +24,18 @@ inputs:
     description: 'Whether to force duplicate questions'
     required: false
     default: 'false'
-  certificate-settings:
-    description: 'JSON string for certificate settings (e.g., {"enabled":true,"criteria":{"type":"completion","value":100},"templateId":"default"})'
+  certificate-enabled:
+    description: 'Enable certificates for this course (true or false)'
     required: false
+    default: 'false'
+  certificate-criteria-type:
+    description: 'Certificate criteria type: completion or points'
+    required: false
+    default: 'completion'
+  certificate-criteria-value:
+    description: 'Certificate criteria value (0-100 for completion, any number for points)'
+    required: false
+    default: '100'
   draft:
     description: 'Whether to create a draft course (true or false)'
     required: false
@@ -120,7 +129,9 @@ runs:
           --commit-sha '${{ github.sha }}' \
           --article-type '${{ inputs.article-type }}' \
           --force-duplicate-questions '${{ inputs.force-duplicate-questions }}' \
-          --certificate-settings '${{ inputs.certificate-settings }}'
+          --certificate-enabled '${{ inputs.certificate-enabled }}' \
+          --certificate-criteria-type '${{ inputs.certificate-criteria-type }}' \
+          --certificate-criteria-value '${{ inputs.certificate-criteria-value }}'
 
     - name: Stage 5b - Update Course
       if: inputs.mode == 'update'
@@ -135,7 +146,9 @@ runs:
           --commit-sha '${{ github.sha }}' \
           --article-type '${{ inputs.article-type }}' \
           --force-duplicate-questions '${{ inputs.force-duplicate-questions }}' \
-          --certificate-settings '${{ inputs.certificate-settings }}'
+          --certificate-enabled '${{ inputs.certificate-enabled }}' \
+          --certificate-criteria-type '${{ inputs.certificate-criteria-type }}' \
+          --certificate-criteria-value '${{ inputs.certificate-criteria-value }}'
 
     - name: Stage 6 - Poll status end point for completion
       id: poll-status

@@ -148,6 +148,52 @@ def validate_certificate_settings(value: str) -> Optional[Dict[str, Any]]:
         raise ValidationError(f"Invalid JSON in certificate settings: {e}")
 
 
+def validate_certificate_criteria_type(value: str) -> str:
+    """Validate certificate criteria type."""
+    if not value or not value.strip():
+        return "completion"
+    value = value.strip().lower()
+    if value not in ["completion", "points"]:
+        raise ValidationError(
+            "Certificate criteria type must be 'completion' or 'points'"
+        )
+    return value
+
+
+def validate_certificate_criteria_value(value: str) -> Optional[float]:
+    """Validate certificate criteria value."""
+    if not value or not value.strip():
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        raise ValidationError("Certificate criteria value must be a number")
+
+
+def build_certificate_settings(
+    enabled: bool,
+    criteria_type: str,
+    criteria_value: Optional[float],
+) -> Optional[Dict[str, Any]]:
+    """Build certificate settings dict from individual fields.
+    
+    If enabled is False, returns settings with enabled=False.
+    """
+    settings: Dict[str, Any] = {"enabled": enabled}
+    
+    if enabled:
+        criteria: Dict[str, Any] = {"type": criteria_type}
+        if criteria_value is not None:
+            if criteria_type == "completion" and criteria_value > 100:
+                raise ValidationError(
+                    "Certificate criteria value cannot exceed 100 for completion type"
+                )
+            criteria["value"] = criteria_value
+        settings["criteria"] = criteria
+    
+    return settings
+
+
 class CourseDeployer:
     """Base class for handling course deployment (create or update) on qBraid."""
 
@@ -157,6 +203,7 @@ class CourseDeployer:
         repo_read_token: str,
         repo_url: str,
         commit_sha: str,
+        article_type: str = "course",
         force_duplicate_questions: bool = True,
         certificate_settings: Optional[Dict[str, Any]] = None,
     ):
@@ -164,6 +211,7 @@ class CourseDeployer:
         self.repo_read_token = repo_read_token
         self.repo_url = repo_url
         self.commit_sha = commit_sha
+        self.article_type = article_type
         self.force_duplicate_questions = force_duplicate_questions
         self.certificate_settings = certificate_settings
         self.session = QbraidSessionV1(api_key=api_key)
@@ -195,8 +243,13 @@ class CourseDeployer:
             "commitSha": self.commit_sha,
         }
 
-        if self.certificate_settings:
+        if self.certificate_settings and self.article_type == "course":
             payload["certificateSettings"] = self.certificate_settings
+        elif self.certificate_settings and self.article_type != "course":
+            logger.warning(
+                f"Certificate settings ignored: only applicable for article type 'course', "
+                f"not '{self.article_type}'"
+            )
 
         if run_attempt:
             try:
