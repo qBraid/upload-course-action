@@ -165,7 +165,10 @@ def validate_certificate_criteria_value(value: str) -> Optional[float]:
     if not value or not value.strip():
         return None
     try:
-        return float(value)
+        val = float(value)
+        if val < 0:
+            raise ValidationError("Certificate criteria value must be non-negative")
+        return val
     except ValueError:
         raise ValidationError("Certificate criteria value must be a number")
 
@@ -244,7 +247,7 @@ class CourseDeployer:
         }
 
         if self.certificate_settings and self.article_type == "course":
-            payload["certificateSettings"] = self.certificate_settings
+            payload["data"]["certificateSettings"] = self.certificate_settings
         elif self.certificate_settings and self.article_type != "course":
             logger.warning(
                 f"Certificate settings ignored: only applicable for article type 'course', "
