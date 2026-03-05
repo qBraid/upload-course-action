@@ -105,49 +105,6 @@ def validate_course_id(course_id: str) -> str:
     return course_id.strip()
 
 
-def validate_certificate_settings(value: str) -> Optional[Dict[str, Any]]:
-    """Validate and parse certificate settings JSON string."""
-    if not value or not value.strip():
-        return None
-    try:
-        settings = json.loads(value)
-        if not isinstance(settings, dict):
-            raise ValidationError("Certificate settings must be a JSON object")
-        if "enabled" in settings:
-            if not isinstance(settings["enabled"], bool):
-                raise ValidationError(
-                    "Certificate settings 'enabled' must be a boolean"
-                )
-        if "criteria" in settings:
-            criteria = settings["criteria"]
-            if not isinstance(criteria, dict):
-                raise ValidationError(
-                    "Certificate settings 'criteria' must be an object"
-                )
-            if "type" in criteria:
-                if criteria["type"] not in ["completion", "points"]:
-                    raise ValidationError(
-                        "Certificate criteria 'type' must be 'completion' or 'points'"
-                    )
-            if "value" in criteria:
-                if not isinstance(criteria["value"], (int, float)):
-                    raise ValidationError(
-                        "Certificate criteria 'value' must be a number"
-                    )
-                if criteria["type"] == "completion" and criteria["value"] > 100:
-                    raise ValidationError(
-                        "Certificate criteria 'value' cannot exceed 100 for completion type"
-                    )
-        if "templateId" in settings:
-            if settings["templateId"] and not isinstance(settings["templateId"], str):
-                raise ValidationError(
-                    "Certificate settings 'templateId' must be a string"
-                )
-        return settings
-    except json.JSONDecodeError as e:
-        raise ValidationError(f"Invalid JSON in certificate settings: {e}")
-
-
 def validate_certificate_criteria_type(value: str) -> str:
     """Validate certificate criteria type."""
     if not value or not value.strip():
