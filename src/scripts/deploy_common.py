@@ -136,11 +136,21 @@ def build_certificate_settings(
     criteria_value: Optional[float],
 ) -> Optional[Dict[str, Any]]:
     """Build certificate settings dict from individual fields.
-    
+
     If enabled is False, returns settings with enabled=False.
+    also set the criteria to completion with value 100%, since the enabled is false,
+    the criteria wont be used for any operation,
+    but it will make sure the payload is always in the same format,
+    and avoid any potential issue on backend side due to missing criteria when enabled is false.
     """
-    settings: Dict[str, Any] = {"enabled": enabled}
-    
+    settings: Dict[str, Any] = {
+        "enabled": enabled, # default is not enabled
+        "criteria": {
+            "type": "completion", # default is "completion"
+            "value": 100.0, # default is 100%
+        },
+    }
+
     if enabled:
         criteria: Dict[str, Any] = {"type": criteria_type}
         if criteria_value is not None:
@@ -150,7 +160,7 @@ def build_certificate_settings(
                 )
             criteria["value"] = criteria_value
         settings["criteria"] = criteria
-    
+
     return settings
 
 

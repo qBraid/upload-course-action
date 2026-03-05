@@ -144,7 +144,78 @@ class TestCourseCreator:
 
         creator.run()
 
-        assert creator.article_type == ArticleType.COURSE
+        assert creator._article_type_enum == ArticleType.COURSE
+        assert creator.article_type == "course"
         args, kwargs = creator.session.request.call_args
         assert args[0] == "POST"
         assert "/learn/articles/course/ingest" in args[1]
+
+    def test_run_with_certificate_settings(self):
+        """Test course creation with certificate settings."""
+        cert_settings = {"enabled": True, "criteria": {"type": "completion", "value": 80}}
+        creator = CourseCreator(
+            api_key=self.api_key,
+            article_type="course",
+            force_duplicate_questions=True,
+            repo_read_token=self.token,
+            repo_url=self.url,
+            commit_sha=self.sha,
+            certificate_settings=cert_settings,
+        )
+        if not isinstance(creator.session, mock.Mock):
+            creator.session = mock.Mock()
+        creator.load_course_data = mock.Mock(return_value={"courseName": "Test"})
+
+        mock_response = mock.Mock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"article": {"customId": "123"}}
+        creator.session.request.return_value = mock_response
+
+        creator.run()
+
+        creator.session.request.assert_called_once()
+        _, kwargs = creator.session.request.call_args
+        payload = json.loads(kwargs["data"])
+        assert payload["data"]["certificateSettings"] == cert_settings
+
+    def test_init_with_certificate_settings(self):
+        """Test CourseCreator initialization with certificate settings."""
+        cert_settings = {"enabled": True, "criteria": {"type": "points", "value": 500}}
+        creator = CourseCreator(
+            api_key="key",
+            article_type="course",
+            force_duplicate_questions=False,
+            repo_read_token="token",
+            repo_url="url",
+            commit_sha="sha",
+            certificate_settings=cert_settings,
+        )
+        assert creator.certificate_settings == cert_settings
+
+    def test_certificate_settings_ignored_for_blog(self):
+        """Test certificate settings are ignored for blog article type."""
+        cert_settings = {"enabled": True, "criteria": {"type": "completion"}}
+        creator = CourseCreator(
+            api_key=self.api_key,
+            article_type="blog",
+            force_duplicate_questions=True,
+            repo_read_token=self.token,
+            repo_url=self.url,
+            commit_sha=self.sha,
+            certificate_settings=cert_settings,
+        )
+        if not isinstance(creator.session, mock.Mock):
+            creator.session = mock.Mock()
+        creator.load_course_data = mock.Mock(return_value={"blogName": "Test Blog"})
+
+        mock_response = mock.Mock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"article": {"customId": "blog-123"}}
+        creator.session.request.return_value = mock_response
+
+        with mock.patch("deploy_common.logger"):
+            creator.run()
+
+        _, kwargs = creator.session.request.call_args
+        payload = json.loads(kwargs["data"])
+        assert "certificateSettings" not in payload["data"]
