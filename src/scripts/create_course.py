@@ -1,7 +1,6 @@
 # Copyright (C) 2026 qBraid
 
 import argparse
-import json
 import sys
 from typing import Any, Dict, Optional
 
