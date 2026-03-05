@@ -144,10 +144,10 @@ def build_certificate_settings(
     and avoid any potential issue on backend side due to missing criteria when enabled is false.
     """
     settings: Dict[str, Any] = {
-        "enabled": enabled, # default is not enabled
+        "enabled": enabled,  # default is not enabled
         "criteria": {
-            "type": "completion", # default is "completion"
-            "value": 100.0, # default is 100%
+            "type": "completion",  # default is "completion"
+            "value": 100.0,  # default is 100%
         },
     }
 

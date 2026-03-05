@@ -152,7 +152,10 @@ class TestCourseCreator:
 
     def test_run_with_certificate_settings(self):
         """Test course creation with certificate settings."""
-        cert_settings = {"enabled": True, "criteria": {"type": "completion", "value": 80}}
+        cert_settings = {
+            "enabled": True,
+            "criteria": {"type": "completion", "value": 80},
+        }
         creator = CourseCreator(
             api_key=self.api_key,
             article_type="course",

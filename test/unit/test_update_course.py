@@ -158,7 +158,10 @@ class TestCourseUpdater:
 
     def test_run_with_certificate_settings(self):
         """Test course update with certificate settings."""
-        cert_settings = {"enabled": True, "criteria": {"type": "completion", "value": 80}}
+        cert_settings = {
+            "enabled": True,
+            "criteria": {"type": "completion", "value": 80},
+        }
         updater = CourseUpdater(
             api_key=self.api_key,
             course_custom_id=self.course_custom_id,

@@ -231,7 +231,10 @@ class TestCourseDeployer:
 
     def test_deployer_init_with_certificate_settings(self):
         """Test CourseDeployer initialization with certificate settings."""
-        cert_settings = {"enabled": True, "criteria": {"type": "completion", "value": 80}}
+        cert_settings = {
+            "enabled": True,
+            "criteria": {"type": "completion", "value": 80},
+        }
         deployer = CourseDeployer(
             api_key="key",
             repo_read_token="token",
@@ -246,7 +249,10 @@ class TestCourseDeployer:
 
     def test_get_common_payload_includes_certificate_settings_for_course(self):
         """Test get_common_payload includes certificate settings for course type."""
-        cert_settings = {"enabled": True, "criteria": {"type": "completion", "value": 80}}
+        cert_settings = {
+            "enabled": True,
+            "criteria": {"type": "completion", "value": 80},
+        }
         deployer = CourseDeployer(
             api_key="key",
             repo_read_token="token",
@@ -263,7 +269,10 @@ class TestCourseDeployer:
 
     def test_get_common_payload_excludes_certificate_settings_for_blog(self):
         """Test get_common_payload excludes certificate settings for blog type."""
-        cert_settings = {"enabled": True, "criteria": {"type": "completion", "value": 80}}
+        cert_settings = {
+            "enabled": True,
+            "criteria": {"type": "completion", "value": 80},
+        }
         deployer = CourseDeployer(
             api_key="key",
             repo_read_token="token",
@@ -296,4 +305,3 @@ class TestCourseDeployer:
         payload = deployer.get_common_payload()
 
         assert "certificateSettings" not in payload["data"]
-
