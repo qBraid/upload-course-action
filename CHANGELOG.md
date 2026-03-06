@@ -47,6 +47,12 @@ uses: qBraid/upload-course-action@v0.1.0-beta
 - PR changelog guard workflow that requires `CHANGELOG.md` updates when code-related files change
 - Typos configuration file to ignore generated artifacts and allow project-specific terms (`qbraid`, `qbook`)
 
+### Added
+- Certificate settings support for course creation and updates via `certificate-enabled`, `certificate-criteria-type`, and `certificate-criteria-value` action inputs
+- Certificate criteria validation (type must be `completion` or `points`; value must be in range 0–100 for completion)
+- Certificate settings payload construction in `deploy_common.py` shared by create and update flows
+- Comprehensive unit tests for certificate settings handling in `CourseDeployer` and `CourseUpdater`
+
 ### Changed
 - Increased default polling attempts to 20 (from 10)
 - Updated CI coverage upload to Codecov to support token upload with OIDC fallback when `CODECOV_TOKEN` is unavailable
