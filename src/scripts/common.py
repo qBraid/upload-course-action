@@ -52,7 +52,7 @@ class Config:
     # Validation Configuration
     MAX_NOTEBOOK_SIZE_MB: int = 5
     MAX_IMAGE_SIZE_MB: int = 15
-    VALID_DOMAINS: frozenset = frozenset({"qbraid.com", "quera.com"})
+    VALID_DOMAINS: frozenset = frozenset({"qbraid.com", "quera.com", "qunorth.com"})
 
     # Paths
     COURSE_FILE_NAME: str = "course.json"
