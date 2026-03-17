@@ -22,22 +22,37 @@ def setup_logging(name: str) -> logging.Logger:
     return logger
 
 
+def _get_env_int(name: str, default: int) -> int:
+    """Parse a positive integer from env vars, falling back to default."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = int(value)
+        if parsed > 0:
+            return parsed
+    except ValueError:
+        pass
+    return default
+
+
 @dataclass(frozen=True)
 class Config:
     """Application configuration constants."""
 
     # API Configuration
-    DEFAULT_API_BASE_URL: str = "https://58bd6384d268.ngrok-free.app/app1/api/v1"
+    # DEFAULT_API_BASE_URL: str = "https://api-v2.qbraid.com/api/v1"
+    DEFAULT_API_BASE_URL: str = "https://b224-120-61-48-60.ngrok-free.app/app1/api/v1"
     API_BASE_URL: str = os.getenv("QBRAID_API_BASE_URL", DEFAULT_API_BASE_URL)
-    REQUEST_TIMEOUT_SECONDS: int = 15
-    MAX_POLL_ATTEMPTS: int = 60
-    POLL_INTERVAL_SECONDS: int = 30
-    MAX_CONSECUTIVE_ERRORS: int = 5
+    REQUEST_TIMEOUT_SECONDS: int = _get_env_int("QBRAID_REQUEST_TIMEOUT_SECONDS", 30)
+    MAX_POLL_ATTEMPTS: int = _get_env_int("QBRAID_MAX_POLL_ATTEMPTS", 20)
+    POLL_INTERVAL_SECONDS: int = _get_env_int("QBRAID_POLL_INTERVAL_SECONDS", 15)
+    MAX_CONSECUTIVE_ERRORS: int = _get_env_int("QBRAID_MAX_CONSECUTIVE_ERRORS", 5)
 
     # Validation Configuration
     MAX_NOTEBOOK_SIZE_MB: int = 5
     MAX_IMAGE_SIZE_MB: int = 15
-    VALID_DOMAINS: frozenset = frozenset({"qbraid.com", "quera.com"})
+    VALID_DOMAINS: frozenset = frozenset({"qbraid.com", "quera.com", "qunorth.com"})
 
     # Paths
     COURSE_FILE_NAME: str = "course.json"

@@ -1,6 +1,8 @@
-# Deploy Course Action
+# Deploy Course to qBraid [BETA]
 
-A GitHub Action for deploying educational courses to  learning platform with automated validation and secure file upload.
+> **⚠️ Beta Status**: This is a beta release of the qBraid Course Deployment Action. It uses our staging environment and may undergo breaking changes. Not recommended for production use until stable release.
+
+A GitHub Action for deploying educational courses to qBraid learning platform with automated validation and secure file upload.
 
 ## Overview
 
@@ -39,13 +41,13 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Deploy to qBraid
-        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
+        uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           api-key: ${{ secrets.QBRAID_API_KEY }}
           repo-read-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-**Note:** For production use, pin to a specific version (e.g., `@v0.1.0`) instead of `@latest` for better reproducibility. See [CHANGELOG.md](CHANGELOG.md) for version history.
+**Note:** This is a beta release using staging API. For production use, wait for stable release. Pin to this specific beta version (`@v0.1.0-beta`) for reproducibility. See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Inputs
 
@@ -56,6 +58,19 @@ jobs:
 | `course-json-path` | Path to `course.json` file | No | `course.json` |
 | `article-type` | Type of article to create (`course` or `blog`) | No | `course` |
 | `force-duplicate-questions` | Whether to force upload duplicate questions (`true` or `false`) | No | `false` |
+| `max-poll-attempts` | Maximum polling attempts before timing out | No | `20` |
+| `poll-interval-seconds` | Seconds to wait between polling attempts | No | `15` |
+| `max-consecutive-errors` | Maximum consecutive polling errors before failing | No | `5` |
+
+## Optional Environment Variables
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `QBRAID_API_BASE_URL` | Override the qBraid API base URL (useful for local/dev testing) | `https://api-v2.qbraid.com/api/v1` |
+| `QBRAID_MAX_POLL_ATTEMPTS` | Maximum polling attempts before timing out | `15` |
+| `QBRAID_POLL_INTERVAL_SECONDS` | Seconds to wait between polling attempts | `15` |
+| `QBRAID_MAX_CONSECUTIVE_ERRORS` | Maximum consecutive polling request errors before failing | `5` |
+| `QBRAID_REQUEST_TIMEOUT_SECONDS` | HTTP request timeout for qBraid API calls | `30` |
 
 ## Outputs
 
@@ -80,12 +95,32 @@ This action validates your course structure and creates it via the qBraid API:
 
 This project follows [Semantic Versioning](https://semver.org/). See [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes.
 
-**Current Version:** `0.1.0`
+**Current Version:** `v0.1.0-beta`
 
 **Recommended Usage:**
-- Production: Pin to a specific version (e.g., `@v0.1.0`)
+- Beta Testing: Pin to `@v0.1.0-beta`
 - Development: Use `@main` or a specific commit SHA
-- Latest: Use `@latest` (not recommended for production)
+- Production: Wait for stable release before use
+- Local Testing: Use `@main` with `QBRAID_API_BASE_URL` override
+
+## Beta Status & Limitations
+
+### Current Beta Status
+- **Environment**: Uses qBraid staging API (`api-v2.qbraid.com`)
+- **Stability**: May undergo breaking changes
+- **Production Use**: Not recommended until stable release
+- **Support**: Community feedback encouraged
+
+### Known Limitations
+- Staging environment may have rate limits
+- Data persistence not guaranteed in staging
+- Some features may be in development
+- Performance may differ from production
+
+### Feedback & Issues
+Please report issues and provide feedback:
+- [GitHub Issues](https://github.com/qBraid/upload-course-action/issues)
+- Include "BETA" in issue title for prioritization
 
 ## Security
 
@@ -104,6 +139,9 @@ This action implements several security measures:
 ### Configuration Security
 - API base URL can be overridden via `QBRAID_API_BASE_URL` environment variable for testing
 - Default production URL: `https://api.qbraid.com`
+- Polling behavior can be tuned using `QBRAID_MAX_POLL_ATTEMPTS`, `QBRAID_POLL_INTERVAL_SECONDS`, and `QBRAID_MAX_CONSECUTIVE_ERRORS`
+- Default API base URL: `https://api-v2.qbraid.com/api/v1`
+- Request timeout can be configured via `QBRAID_REQUEST_TIMEOUT_SECONDS` (must be a positive integer)
 - Timeouts on all API requests prevent hanging operations
 
 ### Best Practices

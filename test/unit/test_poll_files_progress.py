@@ -71,3 +71,18 @@ class TestProgressPoller:
         assert mock_fetch.call_count == 1
         # Should not sleep since we exit immediately
         assert mock_sleep.call_count == 0
+
+    def test_fetch_status_unwraps_jsend(self):
+        """Test fetch_status handles JSend success payloads."""
+        poller = ProgressPoller("key", "id")
+        mock_response = mock.Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "status": "success",
+            "data": {"status": "processing"},
+        }
+        poller.session.get = mock.Mock(return_value=mock_response)
+
+        data = poller.fetch_status()
+
+        assert data == {"status": "processing"}

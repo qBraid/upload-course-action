@@ -8,6 +8,18 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Deployment mode (create/update)'
+        required: true
+        default: 'create'
+        type: choice
+        options:
+        - create
+        - update
+      course_id:
+        description: 'Course ID (required for update)'
+        required: false
 
 permissions:
   contents: write
@@ -21,7 +33,7 @@ jobs:
 
       - name: Deploy to qBraid
         id: deploy
-        uses: courseBuilderNelson/UploadActionRepo@v0.1.0
+        uses: qBraid/upload-course-action@v0.1.0-beta
         with:
           # Required: Your qBraid API Key (stored in repository secrets)
           api-key: ${{ secrets.QBRAID_API_KEY }}
@@ -38,9 +50,17 @@ jobs:
           # Optional: Whether to force upload duplicate questions (defaults to 'false')
           force-duplicate-questions: 'false'
 
+          # Optional: Operation mode ('create' or 'update', defaults to 'create')
+          # Can be dynamic based on workflow inputs or variables
+          mode: ${{ inputs.mode || 'create' }}
+
+          # Optional: Custom ID of the course (Required if mode is 'update')
+          course-custom-id: ${{ inputs.course_id }}
+
       - name: Show deployment results
         if: success()
         run: |
           echo "✅ Course deployed successfully!"
           echo "Course Name: ${{ steps.deploy.outputs.course_name }}"
+          echo "Custom ID: ${{ steps.deploy.outputs.course_custom_id }}"
           echo "Course URL: ${{ steps.deploy.outputs.qbook_url }}"

@@ -1,133 +1,137 @@
-name: Tests
+name: Test and Quality Checks
 
 on:
-  # Allows you to run this workflow manually from the Actions tab
+  push:
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
-  # Will update when API is ready
 
 permissions:
   contents: read
 
 jobs:
-  unit-tests:
-    name: Unit & Integration Tests
+  lint:
+    name: Lint and Format
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
 
       - name: Set up Python
-        run: uv python install
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
-        run: uv sync --extra test
+        run: uv sync --extra dev --extra test
 
-      - name: Run unit tests
-        run: uv run pytest -q test/unit --no-cov
+      - name: Check Black formatting
+        run: uv run black --check src/scripts test
 
-      - name: Run integration tests
-        run: uv run pytest -q test/e2e --no-cov
+      - name: Check import sorting
+        run: uv run isort --check-only src/scripts test
 
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@5e5e22e0e5fbbf50e2e05855b6650b2b45f0b0a2  # v4.4.3
-        with:
-          name: coverage-report
-          path: |
-            htmlcov/
-            coverage.xml
-          retention-days: 7
+      - name: Run Pylint
+        run: uv run pylint src/scripts --rcfile=.pylintrc --fail-under=7.0
 
-  workflow-checks:
-    name: Workflow & Action Checks
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Install actionlint
+      - name: Validate copyright headers
         run: |
-          curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | bash -s
-          sudo mv actionlint /usr/local/bin/
-      
-      - name: Run actionlint
-        run: actionlint
-
-      - name: Run zizmor
-        uses: zizmorcore/zizmor-action@v0.1.2
-        with:
-          advanced-security: false
-
-  e2e-action-test:
-    name: E2E Action Test
-    runs-on: ubuntu-latest
-    needs: [unit-tests, workflow-checks]
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Create test course.json
-        run: |
-          mkdir -p test-e2e
-          cat > test-e2e/course.json << 'EOF'
-          {
-            "courseName": "E2E Test Course",
-            "courseDescription": "Test Description",
-            "visibility": "public",
-            "imageLink": {"darkLogo": "logo.png", "lightLogo": "logo.png"},
-            "tags": ["test"],
-            "deployedTo": ["qbraid.com"],
-            "content": []
-          }
-          EOF
-
-      - name: Test action with valid inputs
-        id: test-valid
-        uses: ./
-        with:
-          api-key: ${{ secrets.QBRAID_API_KEY }}
-          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
-          course-json-path: test-e2e/course.json
-          article-type: course
-        continue-on-error: true
-
-      - name: Assert action outputs
-        if: steps.test-valid.outcome == 'success'
-        run: |
-          if [ -z "${{ steps.test-valid.outputs.course_name }}" ]; then
-            echo "::error::course_name output not set"
+          HEADER_PATTERN="# Copyright (C)"
+          MISSING_HEADERS=0
+          while IFS= read -r file; do
+            if ! head -1 "$file" | grep -q "$HEADER_PATTERN"; then
+              echo "Missing header in: $file"
+              MISSING_HEADERS=1
+            fi
+          done < <(find src/scripts -name "*.py" -type f ! -name "__init__.py")
+          if [ "$MISSING_HEADERS" -eq 1 ]; then
+            echo "Some Python files are missing copyright headers."
             exit 1
           fi
 
-      - name: Test action with spaces in path
-        id: test-spaces
-        uses: ./
-        with:
-          api-key: ${{ secrets.QBRAID_API_KEY }}
-          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
-          course-json-path: "test-e2e/course.json"
-          article-type: "course"
-        continue-on-error: true
+  spellcheck:
+    name: Spell Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-      - name: Test action with missing file
-        id: test-missing
-        uses: ./
-        with:
-          api-key: ${{ secrets.QBRAID_API_KEY }}
-          repo-read-token: ${{ secrets.GITHUB_TOKEN }}
-          course-json-path: "nonexistent.json"
-          article-type: course
-        continue-on-error: true
+      - name: Run typo checks
+        uses: crate-ci/typos@v1
 
-      - name: Verify error handling
-        if: steps.test-missing.outcome == 'success'
-        run: |
-          echo "::error::Action should fail on missing file"
-          exit 1
+  tests:
+    name: Pytest (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      HAS_CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install test dependencies
+        run: uv sync --extra test
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Upload coverage artifacts
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage.xml
+            htmlcov
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN == 'true'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: upload-course-action
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage to Codecov (OIDC fallback)
+        if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN != 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: upload-course-action
+          fail_ci_if_error: true
+          use_oidc: true
+
+      - name: Skip Codecov upload for fork PR without token
+        if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN != 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
+        run: echo "Skipping Codecov upload on forked PR because CODECOV_TOKEN is unavailable and OIDC is not permitted."
+
+  action-metadata:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1.7.10
