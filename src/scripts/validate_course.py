@@ -95,6 +95,45 @@ class Course(BaseModel):
             )
         return v
 
+    @field_validator("content")
+    @classmethod
+    def check_kernel_references(cls, chapters: List["Chapter"]) -> List["Chapter"]:
+        """Validate all kernel references exist in the kernel catalog."""
+        catalog_url = os.environ.get(
+            "KERNEL_CATALOG_URL",
+            "https://qbook-staging.k8s.qbraid.com/api/kernelspecs",
+        )
+
+        try:
+            import urllib.request
+
+            with urllib.request.urlopen(catalog_url, timeout=10) as resp:
+                catalog = json.loads(resp.read().decode())
+            available_kernels = set(catalog.get("kernels", {}).keys())
+        except Exception:
+            logger.warning(
+                "Could not fetch kernel catalog; skipping kernel name validation"
+            )
+            return chapters
+
+        if not available_kernels:
+            logger.warning("Kernel catalog is empty; skipping kernel name validation")
+            return chapters
+
+        for chapter in chapters:
+            if chapter.kernelName not in available_kernels:
+                raise ValueError(
+                    f"Kernel '{chapter.kernelName}' not found in catalog. "
+                    f"Available: {sorted(available_kernels)}"
+                )
+            for section in chapter.sections or []:
+                if section.kernelName not in available_kernels:
+                    raise ValueError(
+                        f"Kernel '{section.kernelName}' not found in catalog. "
+                        f"Available: {sorted(available_kernels)}"
+                    )
+        return chapters
+
 
 class CourseValidator:
     """Validates the course.json structure and file sizes."""
