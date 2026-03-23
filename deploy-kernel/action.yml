@@ -1,0 +1,74 @@
+name: 'Deploy Custom Kernel to qBraid'
+description: 'Validates and deploys a custom Jupyter kernel image to qBraid qBook'
+author: 'qBraid'
+
+branding:
+  icon: 'cpu'
+  color: 'purple'
+
+inputs:
+  api-key:
+    description: 'qBraid API key for authentication'
+    required: true
+  dockerfile-path:
+    description: 'Path to the kernel Dockerfile'
+    required: false
+    default: 'Dockerfile.kernel'
+  kernel-name:
+    description: 'Unique kernel name (lowercase alphanumeric + underscore, 3-64 chars)'
+    required: true
+  language:
+    description: 'Kernel language (python, cpp, julia, r, rust, go, javascript)'
+    required: true
+  display-name:
+    description: 'Human-readable display name for the kernel'
+    required: true
+  context-dir:
+    description: 'Directory containing additional build context files (requirements.txt, kernel.json, etc.)'
+    required: false
+    default: '.'
+  api-base-url:
+    description: 'qBraid API base URL'
+    required: false
+    default: 'https://api-v2.qbraid.com/api/v1'
+
+outputs:
+  kernel-name:
+    description: 'The deployed kernel name'
+  image-uri:
+    description: 'The Artifact Registry image URI'
+  status:
+    description: 'Deployment status (active, failed)'
+  build-id:
+    description: 'Cloud Build ID'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install -q requests qbraid-core tenacity
+
+    - name: Validate Dockerfile
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/src/scripts/validate_dockerfile.py \
+          "${{ inputs.dockerfile-path }}"
+
+    - name: Deploy kernel
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/src/scripts/deploy_kernel.py \
+          --api-key "${{ inputs.api-key }}" \
+          --dockerfile-path "${{ inputs.dockerfile-path }}" \
+          --kernel-name "${{ inputs.kernel-name }}" \
+          --language "${{ inputs.language }}" \
+          --display-name "${{ inputs.display-name }}" \
+          --context-dir "${{ inputs.context-dir }}" \
+          --api-base-url "${{ inputs.api-base-url }}"
