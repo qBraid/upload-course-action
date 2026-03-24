@@ -6,8 +6,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from common import Config, setup_logging
+from common import Config
 from common import ValidationError as ActionValidationError
+from common import setup_logging
 
 logger = setup_logging(__name__)
 
@@ -164,7 +165,7 @@ def validate_dockerfile(content: str) -> DockerfileValidationResult:
     labels = _parse_labels(lines)
     for required_label in REQUIRED_LABELS:
         if required_label not in labels:
-            result.add_error(f'Missing required LABEL: {required_label}')
+            result.add_error(f"Missing required LABEL: {required_label}")
 
     # 1a. Validate kernel name format
     kernel_name = labels.get("qbraid.kernel.name", "")
@@ -200,22 +201,17 @@ def validate_dockerfile(content: str) -> DockerfileValidationResult:
         )
     elif "kernelgateway" not in cmd.lower() and "kernel_gateway" not in cmd.lower():
         result.add_error(
-            "CMD/ENTRYPOINT must reference 'jupyter kernelgateway'. "
-            f"Found: {cmd}"
+            "CMD/ENTRYPOINT must reference 'jupyter kernelgateway'. " f"Found: {cmd}"
         )
 
     # 4. Final USER must not be root
     final_user = _get_final_user(lines)
     if final_user and final_user.lower() in ("root", "0"):
-        result.add_error(
-            "Final USER directive must not be root (security requirement)"
-        )
+        result.add_error("Final USER directive must not be root (security requirement)")
 
     # 5. No privileged flags
     if _has_privileged_flags(lines):
-        result.add_error(
-            "Dockerfile must not use --privileged or --cap-add=SYS_ADMIN"
-        )
+        result.add_error("Dockerfile must not use --privileged or --cap-add=SYS_ADMIN")
 
     # 6. kernel.json must be copied or created
     if not _has_kernel_json_copy(lines):
