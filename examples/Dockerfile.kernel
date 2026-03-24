@@ -1,0 +1,38 @@
+# Example Dockerfile for custom kernel deployment to qBraid
+# This file must be named Dockerfile.kernel (or the path specified in your workflow)
+# See: https://docs.qbraid.com/docs/kernels/custom-kernels
+
+FROM jupyter/base-notebook:latest
+
+# Required labels for qBraid kernel registration
+LABEL qbraid.kernel.name="my_custom_kernel"
+LABEL qbraid.kernel.language="python"
+LABEL qbraid.kernel.display_name="My Custom Kernel"
+
+# Switch to root for system-level installs
+USER root
+
+# Install dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Install the kernel system-wide (root can write to /usr/local/share/jupyter)
+RUN python -m ipykernel install \
+    --name "my_custom_kernel" \
+    --display-name "My Custom Kernel"
+
+# kernel.json is already created by ipykernel install above,
+# but override it with your custom config if needed
+RUN echo '{"argv":["python","-m","ipykernel_launcher","-f","{connection_file}"],"display_name":"My Custom Kernel","language":"python"}' \
+    > /usr/local/share/jupyter/kernels/my_custom_kernel/kernel.json
+
+# Switch back to non-root user (security requirement)
+USER ${NB_UID}
+
+EXPOSE 8888
+WORKDIR /home/jovyan
+
+CMD ["jupyter", "kernelgateway", \
+     "--KernelGatewayApp.ip=0.0.0.0", \
+     "--KernelGatewayApp.port=8888", \
+     "--KernelGatewayApp.allow_origin=*"]

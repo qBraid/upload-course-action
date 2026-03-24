@@ -35,12 +35,16 @@ inputs:
 outputs:
   kernel-name:
     description: 'The deployed kernel name'
+    value: ${{ steps.deploy-kernel.outputs.kernel-name }}
   image-uri:
     description: 'The Artifact Registry image URI'
+    value: ${{ steps.deploy-kernel.outputs.image-uri }}
   status:
     description: 'Deployment status (active, failed)'
+    value: ${{ steps.deploy-kernel.outputs.status }}
   build-id:
     description: 'Cloud Build ID'
+    value: ${{ steps.deploy-kernel.outputs.build-id }}
 
 runs:
   using: 'composite'
@@ -62,6 +66,7 @@ runs:
           "${{ inputs.dockerfile-path }}"
 
     - name: Deploy kernel
+      id: deploy-kernel
       shell: bash
       run: |
         python ${{ github.action_path }}/src/scripts/deploy_kernel.py \
