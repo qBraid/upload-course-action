@@ -8,7 +8,6 @@ from validate_course import Course, CourseValidator
 
 @pytest.mark.unit
 class TestCourseValidator:
-
     @mock.patch("validate_course.Path.exists")
     @mock.patch("validate_course.Path.stat")
     def test_model_validation_valid(self, mock_stat, mock_exists):
@@ -28,8 +27,8 @@ class TestCourseValidator:
                     "chapterFileName": "ch1_file.json",
                     "baseFilePath": "ch1.ipynb",
                     "chapterNumber": 1,
-                    "kernelName": "python3",
-                    "kernelId": "python-3",
+                    "kernelName": "qbraid_python",
+                    "kernelId": "qbraid_python",
                     "sections": [],
                 }
             ],

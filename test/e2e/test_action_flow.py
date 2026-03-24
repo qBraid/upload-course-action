@@ -31,7 +31,6 @@ from common import Config
 
 @pytest.mark.e2e
 class TestActionFlowE2E:
-
     def setup_method(self):
         self.old_cwd = os.getcwd()
         self.test_dir = tempfile.mkdtemp()
@@ -79,8 +78,8 @@ class TestActionFlowE2E:
                     "chapterFileName": "chapter1.ipynb.json",
                     "baseFilePath": "chapter1.ipynb",
                     "chapterNumber": 1,
-                    "kernelName": "python3",
-                    "kernelId": "python3",
+                    "kernelName": "qbraid_python",
+                    "kernelId": "qbraid_python",
                     "sections": [],
                 }
             ],
@@ -98,7 +97,6 @@ class TestActionFlowE2E:
             mock.patch("deploy_common.QbraidSessionV1") as mock_session_cls_create,
             mock.patch("poll_files_progress.QbraidSessionV1") as mock_session_cls_poll,
         ):
-
             # Configure mock instances
             mock_session_instance_validate = mock_session_cls_validate.return_value
             mock_session_instance_create = mock_session_cls_create.return_value

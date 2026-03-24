@@ -93,8 +93,8 @@ def sample_course_json():
                 "chapterFileName": "chapter1.ipynb.json",
                 "baseFilePath": "chapter1.ipynb",
                 "chapterNumber": 1,
-                "kernelName": "python3",
-                "kernelId": "python3",
+                "kernelName": "qbraid_python",
+                "kernelId": "qbraid_python",
                 "sections": [],
             }
         ],
