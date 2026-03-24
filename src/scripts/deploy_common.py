@@ -10,6 +10,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import requests
+
 from common import (
     ActionError,
     ArticleType,
@@ -20,6 +21,10 @@ from common import (
 )
 from qbraid_core import QbraidSessionV1
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+
+BOOLEAN_TRUE_VALUES = ("true", "1", "yes", "on")
+BOOLEAN_FALSE_VALUES = ("false", "0", "no", "off")
+CERTIFICATE_CRITERIA_TYPES = ("completion", "points")
 
 logger = setup_logging(__name__)
 
@@ -51,13 +56,13 @@ def validate_boolean(value: str) -> bool:
     if not value:
         raise ValidationError("Boolean value cannot be empty")
     value_lower = value.strip().lower()
-    if value_lower in ("true", "1", "yes", "on"):
+    if value_lower in BOOLEAN_TRUE_VALUES:
         return True
-    elif value_lower in ("false", "0", "no", "off"):
+    elif value_lower in BOOLEAN_FALSE_VALUES:
         return False
     else:
         raise ValidationError(
-            f"Invalid boolean value '{value}'. Must be one of: true, false, 1, 0, yes, no, on, off"
+            f"Invalid boolean value '{value}'. Must be one of: {', '.join(BOOLEAN_TRUE_VALUES + BOOLEAN_FALSE_VALUES)}"
         )
 
 
@@ -110,9 +115,9 @@ def validate_certificate_criteria_type(value: str) -> str:
     if not value or not value.strip():
         return "completion"
     value = value.strip().lower()
-    if value not in ["completion", "points"]:
+    if value not in CERTIFICATE_CRITERIA_TYPES:
         raise ValidationError(
-            "Certificate criteria type must be 'completion' or 'points'"
+            f"Certificate criteria type must be '{CERTIFICATE_CRITERIA_TYPES[0]}' or '{CERTIFICATE_CRITERIA_TYPES[1]}'"
         )
     return value
 
@@ -143,18 +148,21 @@ def build_certificate_settings(
     but it will make sure the payload is always in the same format,
     and avoid any potential issue on backend side due to missing criteria when enabled is false.
     """
+    default_criteria_type = "completion"
+    default_criteria_value = 100.0
+
     settings: Dict[str, Any] = {
-        "enabled": enabled,  # default is not enabled
+        "enabled": enabled,
         "criteria": {
-            "type": "completion",  # default is "completion"
-            "value": 100.0,  # default is 100%
+            "type": default_criteria_type,
+            "value": default_criteria_value,
         },
     }
 
     if enabled:
         criteria: Dict[str, Any] = {"type": criteria_type}
         if criteria_value is not None:
-            if criteria_type == "completion" and criteria_value > 100:
+            if criteria_type == default_criteria_type and criteria_value > 100:
                 raise ValidationError(
                     "Certificate criteria value cannot exceed 100 for completion type"
                 )
