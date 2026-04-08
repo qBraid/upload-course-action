@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 
-
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 SHARED_VALIDATOR_PATH = PROJECT_ROOT / "src" / "scripts" / "validate_dockerfile.py"
 WRAPPER_VALIDATOR_PATH = (
