@@ -7,8 +7,7 @@ import urllib.request
 from pathlib import Path
 from typing import List, Optional, Set
 
-from common import Config
-from common import setup_logging
+from common import Config, setup_logging
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 logger = setup_logging(__name__)
