@@ -24,6 +24,7 @@ MAX_POLL_ATTEMPTS = 60
 POLL_INTERVAL_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 30
 KERNEL_ALREADY_EXISTS_CODE = "KERNEL_ALREADY_EXISTS"
+FATAL_POLL_STATUS_CODES = {400, 401, 403, 404}
 
 
 def write_github_output(key: str, value: str) -> None:
@@ -54,6 +55,22 @@ def _parse_error_response(response: requests.Response) -> tuple[Optional[str], s
     error_code = error.get("code") if isinstance(error, dict) else None
     message = error.get("message") if isinstance(error, dict) else response.text
     return error_code, message or response.text
+
+
+def _parse_status_response(response: requests.Response) -> tuple[Optional[str], Optional[str]]:
+    """Extract a stable status/error pair from a deploy status response."""
+    try:
+        payload = response.json()
+    except ValueError:
+        return None, response.text
+
+    data = payload.get("data", payload)
+    if not isinstance(data, dict):
+        return None, response.text
+
+    status = data.get("status")
+    error = data.get("error")
+    return status, error if isinstance(error, str) else None
 
 
 def _collect_context_files(context_dir: Path, dockerfile_path: Path) -> Dict[str, str]:
@@ -159,25 +176,35 @@ def deploy_kernel(
             continue
 
         if poll_resp.status_code != 200:
-            logger.warning(f"Poll returned {poll_resp.status_code}")
+            error_code, error_message = _parse_error_response(poll_resp)
+            log_message = (
+                f"Poll returned {poll_resp.status_code}"
+                f"{f' ({error_code})' if error_code else ''}: {error_message}"
+            )
+            if poll_resp.status_code in FATAL_POLL_STATUS_CODES:
+                logger.error(log_message)
+                write_github_output("status", "failed")
+                sys.exit(1)
+            logger.warning(log_message)
             continue
 
-        poll_data = poll_resp.json()
-        status_data = poll_data.get("data", poll_data)
-        status = status_data.get("status", "unknown")
+        status, error = _parse_status_response(poll_resp)
+        if not status:
+            logger.warning("Poll returned 200 without a readable build status")
+            continue
         logger.info(f"Build status: {status}")
 
         if status == "active":
             logger.info(f"Kernel '{kernel_name}' deployed successfully!")
             write_github_output("status", "active")
+            status_data = poll_resp.json().get("data", poll_resp.json())
             image_uri = status_data.get("imageUri", "")
             if image_uri:
                 write_github_output("image-uri", image_uri)
             return
 
         if status == "failed":
-            error = status_data.get("error", "Unknown error")
-            logger.error(f"Kernel build failed: {error}")
+            logger.error(f"Kernel build failed: {error or 'Unknown error'}")
             write_github_output("status", "failed")
             sys.exit(1)
 

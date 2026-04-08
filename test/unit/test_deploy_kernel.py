@@ -12,6 +12,7 @@ sys.path.insert(
     0, str(Path(__file__).parent.parent.parent / "deploy-kernel" / "src" / "scripts")
 )
 from deploy_kernel import (
+    FATAL_POLL_STATUS_CODES,
     KERNEL_ALREADY_EXISTS_CODE,
     MAX_POLL_ATTEMPTS,
     POLL_INTERVAL_SECONDS,
@@ -36,6 +37,9 @@ class TestConstants:
 
     def test_request_timeout(self):
         assert REQUEST_TIMEOUT_SECONDS == 30
+
+    def test_fatal_poll_status_codes(self):
+        assert FATAL_POLL_STATUS_CODES == {400, 401, 403, 404}
 
 
 @pytest.mark.unit
@@ -516,6 +520,87 @@ CMD ["jupyter", "kernelgateway"]
 
         post_call = mock_post.call_args
         assert custom_url in post_call[0][0]
+
+    @mock.patch("deploy_kernel.time.sleep")
+    @mock.patch("deploy_kernel.write_github_output")
+    @mock.patch("deploy_kernel.requests.post")
+    @mock.patch("deploy_kernel.requests.get")
+    def test_deploy_kernel_poll_build_not_found_fails_fast(
+        self, mock_get, mock_post, mock_write_output, mock_sleep, tmp_path
+    ):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.write_text(self.valid_dockerfile)
+
+        mock_post_response = mock.Mock()
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {"data": {"buildId": "build-123"}}
+        mock_post.return_value = mock_post_response
+
+        missing_response = mock.Mock()
+        missing_response.status_code = 404
+        missing_response.text = "build missing"
+        missing_response.json.return_value = {
+            "success": False,
+            "error": {
+                "code": "BUILD_NOT_FOUND",
+                "message": "Build 'build-123' not found",
+            },
+        }
+        mock_get.return_value = missing_response
+
+        with pytest.raises(SystemExit) as exc_info:
+            deploy_kernel(
+                api_key="test-key",
+                dockerfile_path=str(dockerfile_path),
+                kernel_name="test_kernel",
+                language="python",
+                display_name="Test Kernel",
+                context_dir=str(tmp_path),
+                api_base_url="https://api.qbraid.com",
+            )
+
+        assert exc_info.value.code == 1
+        assert mock_get.call_count == 1
+        mock_write_output.assert_any_call("status", "failed")
+
+    @mock.patch("deploy_kernel.time.sleep")
+    @mock.patch("deploy_kernel.write_github_output")
+    @mock.patch("deploy_kernel.requests.post")
+    @mock.patch("deploy_kernel.requests.get")
+    def test_deploy_kernel_poll_auth_failure_fails_fast(
+        self, mock_get, mock_post, mock_write_output, mock_sleep, tmp_path
+    ):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.write_text(self.valid_dockerfile)
+
+        mock_post_response = mock.Mock()
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {"data": {"buildId": "build-123"}}
+        mock_post.return_value = mock_post_response
+
+        unauthorized_response = mock.Mock()
+        unauthorized_response.status_code = 401
+        unauthorized_response.text = "Unauthorized"
+        unauthorized_response.json.return_value = {
+            "success": False,
+            "error": {"code": "UNAUTHORIZED", "message": "Invalid API key"},
+        }
+        mock_get.return_value = unauthorized_response
+
+        with pytest.raises(SystemExit) as exc_info:
+            deploy_kernel(
+                api_key="test-key",
+                dockerfile_path=str(dockerfile_path),
+                kernel_name="test_kernel",
+                language="python",
+                display_name="Test Kernel",
+                context_dir=str(tmp_path),
+                api_base_url="https://api.qbraid.com",
+            )
+
+        assert exc_info.value.code == 1
+        assert mock_get.call_count == 1
+        mock_write_output.assert_any_call("status", "failed")
 
     @mock.patch("deploy_kernel.time.sleep")
     @mock.patch("deploy_kernel.write_github_output")
