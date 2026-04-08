@@ -40,7 +40,7 @@ outputs:
     description: 'The Artifact Registry image URI'
     value: ${{ steps.deploy-kernel.outputs.image-uri }}
   status:
-    description: 'Deployment status (active, failed)'
+    description: 'Deployment status (active, failed, timeout)'
     value: ${{ steps.deploy-kernel.outputs.status }}
   build-id:
     description: 'Cloud Build ID'
@@ -57,7 +57,7 @@ runs:
     - name: Install dependencies
       shell: bash
       run: |
-        pip install -q requests qbraid-core tenacity
+        python -m pip install -q -r "${{ github.action_path }}/requirements.txt"
 
     - name: Validate Dockerfile
       shell: bash

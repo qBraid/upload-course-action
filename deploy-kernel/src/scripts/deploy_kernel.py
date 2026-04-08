@@ -12,12 +12,13 @@ from typing import Dict, Optional
 import requests
 
 logger = logging.getLogger(__name__)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"
-)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%H:%M:%S"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 MAX_POLL_ATTEMPTS = 60
@@ -57,7 +58,9 @@ def _parse_error_response(response: requests.Response) -> tuple[Optional[str], s
     return error_code, message or response.text
 
 
-def _parse_status_response(response: requests.Response) -> tuple[Optional[str], Optional[str]]:
+def _parse_status_response(
+    response: requests.Response,
+) -> tuple[Optional[str], Optional[str]]:
     """Extract a stable status/error pair from a deploy status response."""
     try:
         payload = response.json()
@@ -83,7 +86,9 @@ def _collect_context_files(context_dir: Path, dockerfile_path: Path) -> Dict[str
         if item.is_file() and item != dockerfile_path and item.name != ".gitignore":
             # Skip very large files (> 10MB)
             if item.stat().st_size > 10 * 1024 * 1024:
-                logger.warning(f"Skipping large file: {item.name} ({item.stat().st_size} bytes)")
+                logger.warning(
+                    f"Skipping large file: {item.name} ({item.stat().st_size} bytes)"
+                )
                 continue
             context_files[item.name] = _encode_file(item)
             logger.info(f"  Including context file: {item.name}")
@@ -133,7 +138,9 @@ def deploy_kernel(
 
     url = f"{api_base_url}/kernels/deploy"
     try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT_SECONDS)
+        resp = requests.post(
+            url, headers=headers, json=payload, timeout=REQUEST_TIMEOUT_SECONDS
+        )
     except requests.RequestException as e:
         logger.error(f"Failed to submit deploy request: {e}")
         sys.exit(1)
@@ -170,7 +177,9 @@ def deploy_kernel(
         time.sleep(POLL_INTERVAL_SECONDS)
 
         try:
-            poll_resp = requests.get(poll_url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS)
+            poll_resp = requests.get(
+                poll_url, headers=headers, timeout=REQUEST_TIMEOUT_SECONDS
+            )
         except requests.RequestException as e:
             logger.warning(f"Poll request failed: {e}")
             continue
@@ -208,7 +217,9 @@ def deploy_kernel(
             write_github_output("status", "failed")
             sys.exit(1)
 
-    logger.error(f"Build timed out after {MAX_POLL_ATTEMPTS * POLL_INTERVAL_SECONDS} seconds")
+    logger.error(
+        f"Build timed out after {MAX_POLL_ATTEMPTS * POLL_INTERVAL_SECONDS} seconds"
+    )
     write_github_output("status", "timeout")
     sys.exit(1)
 

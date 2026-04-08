@@ -1,28 +1,43 @@
 # Copyright (C) 2026 qBraid
 
 import base64
-import json
+import importlib.util
 import sys
 from pathlib import Path
 from unittest import mock
 
 import pytest
 
-sys.path.insert(
-    0, str(Path(__file__).parent.parent.parent / "deploy-kernel" / "src" / "scripts")
+PROJECT_ROOT = Path(__file__).parent.parent.parent
+DEPLOY_KERNEL_PATH = (
+    PROJECT_ROOT / "deploy-kernel" / "src" / "scripts" / "deploy_kernel.py"
 )
-from deploy_kernel import (
-    FATAL_POLL_STATUS_CODES,
-    KERNEL_ALREADY_EXISTS_CODE,
-    MAX_POLL_ATTEMPTS,
-    POLL_INTERVAL_SECONDS,
-    REQUEST_TIMEOUT_SECONDS,
-    _collect_context_files,
-    _encode_file,
-    _parse_error_response,
-    deploy_kernel,
-    write_github_output,
-)
+
+
+def _load_deploy_kernel_module():
+    spec = importlib.util.spec_from_file_location("deploy_kernel", DEPLOY_KERNEL_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    sys.path.insert(0, str(DEPLOY_KERNEL_PATH.parent))
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.path.pop(0)
+    return module
+
+
+deploy_kernel_module = _load_deploy_kernel_module()
+FATAL_POLL_STATUS_CODES = deploy_kernel_module.FATAL_POLL_STATUS_CODES
+KERNEL_ALREADY_EXISTS_CODE = deploy_kernel_module.KERNEL_ALREADY_EXISTS_CODE
+MAX_POLL_ATTEMPTS = deploy_kernel_module.MAX_POLL_ATTEMPTS
+POLL_INTERVAL_SECONDS = deploy_kernel_module.POLL_INTERVAL_SECONDS
+REQUEST_TIMEOUT_SECONDS = deploy_kernel_module.REQUEST_TIMEOUT_SECONDS
+_collect_context_files = deploy_kernel_module._collect_context_files
+_encode_file = deploy_kernel_module._encode_file
+_parse_error_response = deploy_kernel_module._parse_error_response
+deploy_kernel = deploy_kernel_module.deploy_kernel
+write_github_output = deploy_kernel_module.write_github_output
 
 
 @pytest.mark.unit

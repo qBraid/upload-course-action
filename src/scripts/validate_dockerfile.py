@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from common import Config
-from common import ValidationError as ActionValidationError
 from common import setup_logging
 
 logger = setup_logging(__name__)
