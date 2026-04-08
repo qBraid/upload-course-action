@@ -15,8 +15,8 @@ WRAPPER_VALIDATOR_PATH = (
 
 def _load_module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
-    module = importlib.util.module_from_spec(spec)
     assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
     import sys
 
     sys.path.insert(0, str(path.parent))
@@ -36,9 +36,12 @@ def test_deploy_kernel_validator_wrapper_uses_shared_implementation():
         'FROM python:3.11\nLABEL qbraid.kernel.name="bad-name"\n'
     )
 
-    assert result.errors == shared_module.validate_dockerfile(
-        'FROM python:3.11\nLABEL qbraid.kernel.name="bad-name"\n'
-    ).errors
+    assert (
+        result.errors
+        == shared_module.validate_dockerfile(
+            'FROM python:3.11\nLABEL qbraid.kernel.name="bad-name"\n'
+        ).errors
+    )
     assert (
         wrapper_module.KERNEL_NAME_PATTERN.pattern
         == shared_module.KERNEL_NAME_PATTERN.pattern
