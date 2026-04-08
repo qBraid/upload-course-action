@@ -2,7 +2,6 @@
 
 import argparse
 import base64
-import json
 import logging
 import os
 import sys
@@ -24,6 +23,7 @@ logger.setLevel(logging.INFO)
 MAX_POLL_ATTEMPTS = 60
 POLL_INTERVAL_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 30
+KERNEL_ALREADY_EXISTS_CODE = "KERNEL_ALREADY_EXISTS"
 
 
 def write_github_output(key: str, value: str) -> None:
@@ -41,6 +41,19 @@ def write_github_output(key: str, value: str) -> None:
 def _encode_file(path: Path) -> str:
     """Base64-encode a file."""
     return base64.b64encode(path.read_bytes()).decode("utf-8")
+
+
+def _parse_error_response(response: requests.Response) -> tuple[Optional[str], str]:
+    """Extract a stable error code/message pair from qBraid API error responses."""
+    try:
+        payload = response.json()
+    except ValueError:
+        return None, response.text
+
+    error = payload.get("error", payload)
+    error_code = error.get("code") if isinstance(error, dict) else None
+    message = error.get("message") if isinstance(error, dict) else response.text
+    return error_code, message or response.text
 
 
 def _collect_context_files(context_dir: Path, dockerfile_path: Path) -> Dict[str, str]:
@@ -109,7 +122,17 @@ def deploy_kernel(
         sys.exit(1)
 
     if resp.status_code not in (200, 201):
-        logger.error(f"Deploy request failed: {resp.status_code} {resp.text}")
+        error_code, error_message = _parse_error_response(resp)
+        if error_code == KERNEL_ALREADY_EXISTS_CODE:
+            logger.info(
+                "Kernel '%s' already exists and is active; treating deploy as successful.",
+                kernel_name,
+            )
+            write_github_output("kernel-name", kernel_name)
+            write_github_output("status", "active")
+            return
+
+        logger.error(f"Deploy request failed: {resp.status_code} {error_message}")
         sys.exit(1)
 
     resp_data = resp.json()

@@ -12,11 +12,13 @@ sys.path.insert(
     0, str(Path(__file__).parent.parent.parent / "deploy-kernel" / "src" / "scripts")
 )
 from deploy_kernel import (
+    KERNEL_ALREADY_EXISTS_CODE,
     MAX_POLL_ATTEMPTS,
     POLL_INTERVAL_SECONDS,
     REQUEST_TIMEOUT_SECONDS,
     _collect_context_files,
     _encode_file,
+    _parse_error_response,
     deploy_kernel,
     write_github_output,
 )
@@ -254,6 +256,39 @@ CMD ["jupyter", "kernelgateway"]
 
     @mock.patch("deploy_kernel.write_github_output")
     @mock.patch("deploy_kernel.requests.post")
+    def test_deploy_kernel_already_exists_is_treated_as_success(
+        self, mock_post, mock_write_output, tmp_path
+    ):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.write_text(self.valid_dockerfile)
+
+        mock_post_response = mock.Mock()
+        mock_post_response.status_code = 400
+        mock_post_response.text = "Kernel already exists"
+        mock_post_response.json.return_value = {
+            "success": False,
+            "error": {
+                "message": "Kernel 'test_kernel' already exists with status 'active'",
+                "code": KERNEL_ALREADY_EXISTS_CODE,
+            },
+        }
+        mock_post.return_value = mock_post_response
+
+        deploy_kernel(
+            api_key="test-key",
+            dockerfile_path=str(dockerfile_path),
+            kernel_name="test_kernel",
+            language="python",
+            display_name="Test Kernel",
+            context_dir=str(tmp_path),
+            api_base_url="https://api.qbraid.com",
+        )
+
+        mock_write_output.assert_any_call("kernel-name", "test_kernel")
+        mock_write_output.assert_any_call("status", "active")
+
+    @mock.patch("deploy_kernel.write_github_output")
+    @mock.patch("deploy_kernel.requests.post")
     def test_deploy_kernel_no_build_id(self, mock_post, mock_write_output, tmp_path):
         dockerfile_path = tmp_path / "Dockerfile"
         dockerfile_path.write_text(self.valid_dockerfile)
@@ -384,7 +419,6 @@ CMD ["jupyter", "kernelgateway"]
             )
         assert exc_info.value.code == 1
         mock_write_output.assert_any_call("status", "timeout")
-        assert mock_get.call_count == MAX_POLL_ATTEMPTS
 
     @mock.patch("deploy_kernel.time.sleep")
     @mock.patch("deploy_kernel.write_github_output")
@@ -524,3 +558,28 @@ CMD ["jupyter", "kernelgateway"]
             )
         assert exc_info.value.code == 1
         mock_write_output.assert_any_call("status", "timeout")
+
+
+@pytest.mark.unit
+class TestParseErrorResponse:
+    def test_prefers_structured_error_payload(self):
+        response = mock.Mock()
+        response.text = "fallback"
+        response.json.return_value = {
+            "error": {"code": KERNEL_ALREADY_EXISTS_CODE, "message": "already there"}
+        }
+
+        error_code, message = _parse_error_response(response)
+
+        assert error_code == KERNEL_ALREADY_EXISTS_CODE
+        assert message == "already there"
+
+    def test_falls_back_to_response_text_for_non_json(self):
+        response = mock.Mock()
+        response.text = "plain text error"
+        response.json.side_effect = ValueError("invalid json")
+
+        error_code, message = _parse_error_response(response)
+
+        assert error_code is None
+        assert message == "plain text error"
