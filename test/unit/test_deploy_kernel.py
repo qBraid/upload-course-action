@@ -735,7 +735,9 @@ CMD ["jupyter", "kernelgateway"]
     def test_deploy_kernel_rejects_label_mismatch(self, tmp_path):
         dockerfile_path = tmp_path / "Dockerfile"
         dockerfile_path.write_text(
-            self.valid_dockerfile.replace('qbraid.kernel.name="test_kernel"', 'qbraid.kernel.name="other_kernel"')
+            self.valid_dockerfile.replace(
+                'qbraid.kernel.name="test_kernel"', 'qbraid.kernel.name="other_kernel"'
+            )
         )
 
         with pytest.raises(SystemExit) as exc_info:
