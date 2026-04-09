@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import requests
+from validate_dockerfile import (
+    SUPPORTED_LANGUAGES,
+    extract_dockerfile_labels,
+    KERNEL_NAME_PATTERN,
+)
 
 logger = logging.getLogger(__name__)
 if not logger.handlers:
@@ -26,14 +31,45 @@ POLL_INTERVAL_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 30
 KERNEL_ALREADY_EXISTS_CODE = "KERNEL_ALREADY_EXISTS"
 FATAL_POLL_STATUS_CODES = {400, 401, 403, 404}
+DEFAULT_TIMEOUT_SECONDS = 1800
+SKIPPED_CONTEXT_FILES = frozenset(
+    {
+        ".gitignore",
+        ".dockerignore",
+        ".env",
+        ".env.local",
+        ".env.production",
+        ".env.staging",
+        ".npmrc",
+        ".pypirc",
+        ".netrc",
+        "id_rsa",
+        "id_ed25519",
+        "credentials",
+    }
+)
+SKIPPED_CONTEXT_SUFFIXES = (".pem", ".key", ".p12", ".crt", ".kubeconfig")
+SKIPPED_CONTEXT_SUBSTRINGS = ("secret", "token", "password", "credential")
 
 
 def write_github_output(key: str, value: str) -> None:
-    """Write a key-value pair to GITHUB_OUTPUT."""
+    """Safely write a key-value pair to GITHUB_OUTPUT."""
     if "GITHUB_OUTPUT" not in os.environ:
         return
     try:
         output_file = os.environ["GITHUB_OUTPUT"]
+        if "\n" in value:
+            delimiter = f"GITHUB_OUTPUT_DELIMITER_{key.upper()}"
+            while delimiter in value:
+                delimiter = f"{delimiter}_ALT"
+            with open(output_file, "a") as f:
+                f.write(f"{key}<<{delimiter}\n")
+                f.write(value)
+                if not value.endswith("\n"):
+                    f.write("\n")
+                f.write(f"{delimiter}\n")
+            return
+
         with open(output_file, "a") as f:
             f.write(f"{key}={value}\n")
     except (IOError, OSError) as e:
@@ -83,27 +119,89 @@ def _collect_context_files(context_dir: Path, dockerfile_path: Path) -> Dict[str
         return context_files
 
     for item in context_dir.iterdir():
-        if item.is_file() and item != dockerfile_path and item.name != ".gitignore":
-            # Skip very large files (> 10MB)
-            if item.stat().st_size > 10 * 1024 * 1024:
-                logger.warning(
-                    f"Skipping large file: {item.name} ({item.stat().st_size} bytes)"
-                )
-                continue
-            context_files[item.name] = _encode_file(item)
-            logger.info(f"  Including context file: {item.name}")
+        if not item.is_file() or item == dockerfile_path:
+            continue
+
+        item_name = item.name
+        lowered_name = item_name.lower()
+        if (
+            item_name in SKIPPED_CONTEXT_FILES
+            or item_name.startswith(".")
+            or lowered_name.endswith(SKIPPED_CONTEXT_SUFFIXES)
+            or any(part in lowered_name for part in SKIPPED_CONTEXT_SUBSTRINGS)
+        ):
+            logger.info(f"  Skipping sensitive context file: {item_name}")
+            continue
+
+        # Skip very large files (> 10MB)
+        if item.stat().st_size > 10 * 1024 * 1024:
+            logger.warning(
+                f"Skipping large file: {item.name} ({item.stat().st_size} bytes)"
+            )
+            continue
+        context_files[item.name] = _encode_file(item)
+        logger.info(f"  Including context file: {item.name}")
 
     return context_files
 
 
+def _validate_deploy_inputs(kernel_name: str, language: str, display_name: str) -> None:
+    if not KERNEL_NAME_PATTERN.match(kernel_name):
+        logger.error(
+            "Invalid kernel name '%s'. Use lowercase letters, digits, and underscores (3-64 chars, starting with a letter).",
+            kernel_name,
+        )
+        sys.exit(1)
+
+    if language not in SUPPORTED_LANGUAGES:
+        logger.error(
+            "Unsupported kernel language '%s'. Supported values: %s",
+            language,
+            ", ".join(sorted(SUPPORTED_LANGUAGES)),
+        )
+        sys.exit(1)
+
+    if not display_name.strip():
+        logger.error("Display name must not be empty")
+        sys.exit(1)
+
+
+def _validate_dockerfile_labels(
+    dockerfile_content: str,
+    kernel_name: str,
+    language: str,
+    display_name: str,
+) -> None:
+    labels = extract_dockerfile_labels(dockerfile_content)
+    expected_labels = {
+        "qbraid.kernel.name": kernel_name,
+        "qbraid.kernel.language": language,
+        "qbraid.kernel.display_name": display_name,
+    }
+
+    for label_key, expected_value in expected_labels.items():
+        actual_value = labels.get(label_key)
+        if actual_value is None:
+            continue
+        if actual_value != expected_value:
+            logger.error(
+                "Dockerfile label %s=%r does not match action input %r",
+                label_key,
+                actual_value,
+                expected_value,
+            )
+            sys.exit(1)
+
+
 def deploy_kernel(
-    api_key: str,
     dockerfile_path: str,
     kernel_name: str,
     language: str,
     display_name: str,
     context_dir: str,
     api_base_url: str,
+    api_key: Optional[str] = None,
+    timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> None:
     """Deploy a custom kernel to qBraid."""
     dockerfile = Path(dockerfile_path)
@@ -111,11 +209,22 @@ def deploy_kernel(
         logger.error(f"Dockerfile not found: {dockerfile}")
         sys.exit(1)
 
+    resolved_api_key = api_key or os.getenv("QBRAID_API_KEY", "").strip()
+    if not resolved_api_key:
+        logger.error("Missing qBraid API key. Set QBRAID_API_KEY or pass --api-key.")
+        sys.exit(1)
+
+    _validate_deploy_inputs(kernel_name, language, display_name)
+
     ctx_dir = Path(context_dir)
 
     # Encode Dockerfile
     logger.info(f"Encoding Dockerfile: {dockerfile}")
-    dockerfile_b64 = _encode_file(dockerfile)
+    dockerfile_content = dockerfile.read_text()
+    _validate_dockerfile_labels(dockerfile_content, kernel_name, language, display_name)
+    dockerfile_b64 = base64.b64encode(dockerfile_content.encode("utf-8")).decode(
+        "utf-8"
+    )
 
     # Collect context files
     logger.info(f"Collecting context files from: {ctx_dir}")
@@ -124,7 +233,7 @@ def deploy_kernel(
     # Submit deploy request
     logger.info(f"Deploying kernel '{kernel_name}' ({language})...")
     headers = {
-        "X-API-Key": api_key,
+        "X-API-Key": resolved_api_key,
         "Content-Type": "application/json",
     }
     payload = {
@@ -172,9 +281,9 @@ def deploy_kernel(
 
     # Poll for completion
     poll_url = f"{api_base_url}/kernels/deploy/{build_id}"
+    deadline = time.monotonic() + timeout_seconds
     for attempt in range(1, MAX_POLL_ATTEMPTS + 1):
         logger.info(f"Polling build status (attempt {attempt}/{MAX_POLL_ATTEMPTS})...")
-        time.sleep(POLL_INTERVAL_SECONDS)
 
         try:
             poll_resp = requests.get(
@@ -217,30 +326,35 @@ def deploy_kernel(
             write_github_output("status", "failed")
             sys.exit(1)
 
-    logger.error(
-        f"Build timed out after {MAX_POLL_ATTEMPTS * POLL_INTERVAL_SECONDS} seconds"
-    )
+        if time.monotonic() >= deadline:
+            break
+
+        time.sleep(POLL_INTERVAL_SECONDS)
+
+    logger.error(f"Build timed out after {timeout_seconds} seconds")
     write_github_output("status", "timeout")
     sys.exit(1)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Deploy a custom kernel to qBraid")
-    parser.add_argument("--api-key", required=True)
+    parser.add_argument("--api-key")
     parser.add_argument("--dockerfile-path", required=True)
     parser.add_argument("--kernel-name", required=True)
     parser.add_argument("--language", required=True)
     parser.add_argument("--display-name", required=True)
     parser.add_argument("--context-dir", default=".")
     parser.add_argument("--api-base-url", default="https://api-v2.qbraid.com/api/v1")
+    parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
 
     args = parser.parse_args()
     deploy_kernel(
-        api_key=args.api_key,
         dockerfile_path=args.dockerfile_path,
         kernel_name=args.kernel_name,
         language=args.language,
         display_name=args.display_name,
         context_dir=args.context_dir,
         api_base_url=args.api_base_url,
+        api_key=args.api_key,
+        timeout_seconds=args.timeout_seconds,
     )

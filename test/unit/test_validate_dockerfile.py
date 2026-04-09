@@ -26,6 +26,7 @@ _join_continuation_lines = vd_module._join_continuation_lines
 _parse_labels = vd_module._parse_labels
 validate_dockerfile = vd_module.validate_dockerfile
 validate_dockerfile_file = vd_module.validate_dockerfile_file
+extract_dockerfile_labels = vd_module.extract_dockerfile_labels
 
 
 VALID_DOCKERFILE = """\
@@ -97,6 +98,10 @@ class TestParseLabels:
         lines = ["FROM python:3.11", "LABEL key=value", "RUN echo hello"]
         labels = _parse_labels(lines)
         assert labels == {"key": "value"}
+
+    def test_extract_dockerfile_labels_from_content(self):
+        labels = extract_dockerfile_labels(VALID_DOCKERFILE)
+        assert labels["qbraid.kernel.name"] == "my_python_kernel"
 
 
 @pytest.mark.unit
@@ -216,6 +221,12 @@ class TestHasKernelJsonCopy:
 
     def test_run_kernelspec(self):
         lines = ["RUN jupyter kernelspec install-self --kernel=kernel.json"]
+        assert _has_kernel_json_copy(lines) is True
+
+    def test_run_ipykernel_install(self):
+        lines = [
+            "RUN python -m ipykernel install --name my_python_kernel --prefix /usr/local"
+        ]
         assert _has_kernel_json_copy(lines) is True
 
     def test_no_kernel_json(self):

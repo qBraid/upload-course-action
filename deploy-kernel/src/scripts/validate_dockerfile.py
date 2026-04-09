@@ -32,6 +32,7 @@ DockerfileValidationResult = _shared_validator.DockerfileValidationResult
 KERNEL_NAME_PATTERN = _shared_validator.KERNEL_NAME_PATTERN
 SUPPORTED_LANGUAGES = _shared_validator.SUPPORTED_LANGUAGES
 REQUIRED_LABELS = _shared_validator.REQUIRED_LABELS
+extract_dockerfile_labels = _shared_validator.extract_dockerfile_labels
 validate_dockerfile = _shared_validator.validate_dockerfile
 validate_dockerfile_file = _shared_validator.validate_dockerfile_file
 

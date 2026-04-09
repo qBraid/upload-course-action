@@ -51,6 +51,11 @@ def _parse_labels(lines: List[str]) -> Dict[str, str]:
     return labels
 
 
+def extract_dockerfile_labels(content: str) -> Dict[str, str]:
+    """Extract LABEL directives from raw Dockerfile content."""
+    return _parse_labels(_join_continuation_lines(content.splitlines()))
+
+
 def _get_final_user(lines: List[str]) -> Optional[str]:
     """Get the last USER directive in the Dockerfile."""
     last_user = None
@@ -87,6 +92,7 @@ def _has_kernel_json_copy(lines: List[str]) -> bool:
     """Check if kernel.json is being copied into the image."""
     for line in lines:
         stripped = line.strip()
+        lowered = stripped.lower()
         upper = stripped.upper()
         if upper.startswith("COPY ") or upper.startswith("ADD "):
             if "kernel.json" in stripped:
@@ -94,11 +100,13 @@ def _has_kernel_json_copy(lines: List[str]) -> bool:
         # Also check RUN commands that create kernel.json
         if upper.startswith("RUN "):
             if "kernel.json" in stripped and (
-                "echo" in stripped.lower()
-                or "cat" in stripped.lower()
-                or "tee" in stripped.lower()
-                or "kernelspec" in stripped.lower()
+                "echo" in lowered
+                or "cat" in lowered
+                or "tee" in lowered
+                or "kernelspec" in lowered
             ):
+                return True
+            if "ipykernel" in lowered and "install" in lowered:
                 return True
     return False
 

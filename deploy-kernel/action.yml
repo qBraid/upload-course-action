@@ -31,6 +31,10 @@ inputs:
     description: 'qBraid API base URL'
     required: false
     default: 'https://api-v2.qbraid.com/api/v1'
+  timeout-seconds:
+    description: 'Maximum time to wait for deployment to finish'
+    required: false
+    default: '1800'
 
 outputs:
   kernel-name:
@@ -68,12 +72,16 @@ runs:
     - name: Deploy kernel
       id: deploy-kernel
       shell: bash
+      env:
+        QBRAID_API_KEY: ${{ inputs.api-key }}
+        QBRAID_DEPLOY_TIMEOUT_SECONDS: ${{ inputs.timeout-seconds }}
       run: |
+        echo "::add-mask::$QBRAID_API_KEY"
         python ${{ github.action_path }}/src/scripts/deploy_kernel.py \
-          --api-key "${{ inputs.api-key }}" \
           --dockerfile-path "${{ inputs.dockerfile-path }}" \
           --kernel-name "${{ inputs.kernel-name }}" \
           --language "${{ inputs.language }}" \
           --display-name "${{ inputs.display-name }}" \
           --context-dir "${{ inputs.context-dir }}" \
-          --api-base-url "${{ inputs.api-base-url }}"
+          --api-base-url "${{ inputs.api-base-url }}" \
+          --timeout-seconds "${{ inputs.timeout-seconds }}"

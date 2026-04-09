@@ -87,6 +87,16 @@ class TestWriteGithubOutput:
         lines = content.strip().split("\n")
         assert len(lines) == 2
 
+    def test_write_multiline_output_uses_delimiter_format(self, tmp_path, monkeypatch):
+        output_file = tmp_path / "github_output"
+        monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
+
+        write_github_output("error", "first line\nsecond line")
+
+        content = output_file.read_text()
+        assert "error<<" in content
+        assert "first line\nsecond line" in content
+
 
 @pytest.mark.unit
 class TestEncodeFile:
@@ -140,6 +150,19 @@ class TestCollectContextFiles:
 
         result = _collect_context_files(tmp_path, dockerfile_path)
         assert ".gitignore" not in result
+
+    def test_collect_context_files_excludes_sensitive_files(self, tmp_path):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.touch()
+        (tmp_path / ".env").write_text("QBRAID_API_KEY=secret")
+        (tmp_path / "secrets.pem").write_text("pem")
+        (tmp_path / "requirements.txt").write_text("requests")
+
+        result = _collect_context_files(tmp_path, dockerfile_path)
+
+        assert ".env" not in result
+        assert "secrets.pem" not in result
+        assert "requirements.txt" in result
 
     def test_collect_context_files_skips_large_files(self, tmp_path):
         dockerfile_path = tmp_path / "Dockerfile"
@@ -233,6 +256,7 @@ CMD ["jupyter", "kernelgateway"]
         mock_write_output.assert_any_call("kernel-name", "test_kernel")
         mock_write_output.assert_any_call("status", "active")
         mock_write_output.assert_any_call("image-uri", "docker.io/image:tag")
+        mock_sleep.assert_not_called()
 
     @mock.patch("deploy_kernel.write_github_output")
     def test_deploy_kernel_missing_dockerfile(self, mock_write_output, tmp_path):
@@ -240,13 +264,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=nonexistent_path,
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
         assert exc_info.value.code == 1
 
@@ -263,13 +287,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="bad-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="bad-key",
             )
         assert exc_info.value.code == 1
 
@@ -294,13 +318,13 @@ CMD ["jupyter", "kernelgateway"]
         mock_post.return_value = mock_post_response
 
         deploy_kernel(
-            api_key="test-key",
             dockerfile_path=str(dockerfile_path),
             kernel_name="test_kernel",
             language="python",
             display_name="Test Kernel",
             context_dir=str(tmp_path),
             api_base_url="https://api.qbraid.com",
+            api_key="test-key",
         )
 
         mock_write_output.assert_any_call("kernel-name", "test_kernel")
@@ -319,13 +343,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
         assert exc_info.value.code == 1
 
@@ -359,13 +383,13 @@ CMD ["jupyter", "kernelgateway"]
         mock_get.side_effect = mock_get_responses
 
         deploy_kernel(
-            api_key="test-key",
             dockerfile_path=str(dockerfile_path),
             kernel_name="test_kernel",
             language="python",
             display_name="Test Kernel",
             context_dir=str(tmp_path),
             api_base_url="https://api.qbraid.com",
+            api_key="test-key",
         )
 
         assert mock_get.call_count == 4
@@ -395,13 +419,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
         assert exc_info.value.code == 1
         mock_write_output.assert_any_call("status", "failed")
@@ -463,13 +487,13 @@ CMD ["jupyter", "kernelgateway"]
         mock_get.return_value = mock_get_response
 
         deploy_kernel(
-            api_key="test-key",
             dockerfile_path=str(dockerfile_path),
             kernel_name="test_kernel",
             language="python",
             display_name="Test Kernel",
             context_dir=str(tmp_path),
             api_base_url="https://api.qbraid.com",
+            api_key="test-key",
         )
 
         assert mock_post.called
@@ -492,13 +516,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
         assert exc_info.value.code == 1
 
@@ -524,13 +548,13 @@ CMD ["jupyter", "kernelgateway"]
 
         custom_url = "https://custom-api.qbraid.com/api/v1"
         deploy_kernel(
-            api_key="test-key",
             dockerfile_path=str(dockerfile_path),
             kernel_name="test_kernel",
             language="python",
             display_name="Test Kernel",
             context_dir=str(tmp_path),
             api_base_url=custom_url,
+            api_key="test-key",
         )
 
         post_call = mock_post.call_args
@@ -565,13 +589,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
 
         assert exc_info.value.code == 1
@@ -604,13 +628,13 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
 
         assert exc_info.value.code == 1
@@ -648,16 +672,84 @@ CMD ["jupyter", "kernelgateway"]
 
         with pytest.raises(SystemExit) as exc_info:
             deploy_kernel(
-                api_key="test-key",
                 dockerfile_path=str(dockerfile_path),
                 kernel_name="test_kernel",
                 language="python",
                 display_name="Test Kernel",
                 context_dir=str(tmp_path),
                 api_base_url="https://api.qbraid.com",
+                api_key="test-key",
             )
         assert exc_info.value.code == 1
         mock_write_output.assert_any_call("status", "timeout")
+
+    @mock.patch("deploy_kernel.write_github_output")
+    @mock.patch("deploy_kernel.requests.post")
+    def test_deploy_kernel_uses_api_key_from_env(
+        self, mock_post, mock_write_output, tmp_path, monkeypatch
+    ):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.write_text(self.valid_dockerfile)
+        monkeypatch.setenv("QBRAID_API_KEY", "env-api-key")
+
+        mock_post_response = mock.Mock()
+        mock_post_response.status_code = 400
+        mock_post_response.text = "Kernel already exists"
+        mock_post_response.json.return_value = {
+            "error": {
+                "message": "Kernel 'test_kernel' already exists",
+                "code": KERNEL_ALREADY_EXISTS_CODE,
+            }
+        }
+        mock_post.return_value = mock_post_response
+
+        deploy_kernel(
+            dockerfile_path=str(dockerfile_path),
+            kernel_name="test_kernel",
+            language="python",
+            display_name="Test Kernel",
+            context_dir=str(tmp_path),
+            api_base_url="https://api.qbraid.com",
+        )
+
+        headers = mock_post.call_args.kwargs["headers"]
+        assert headers["X-API-Key"] == "env-api-key"
+
+    def test_deploy_kernel_rejects_invalid_kernel_name(self, tmp_path):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.write_text(self.valid_dockerfile)
+
+        with pytest.raises(SystemExit) as exc_info:
+            deploy_kernel(
+                dockerfile_path=str(dockerfile_path),
+                kernel_name="Invalid-Name",
+                language="python",
+                display_name="Test Kernel",
+                context_dir=str(tmp_path),
+                api_base_url="https://api.qbraid.com",
+                api_key="test-key",
+            )
+
+        assert exc_info.value.code == 1
+
+    def test_deploy_kernel_rejects_label_mismatch(self, tmp_path):
+        dockerfile_path = tmp_path / "Dockerfile"
+        dockerfile_path.write_text(
+            self.valid_dockerfile.replace('qbraid.kernel.name="test_kernel"', 'qbraid.kernel.name="other_kernel"')
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            deploy_kernel(
+                dockerfile_path=str(dockerfile_path),
+                kernel_name="test_kernel",
+                language="python",
+                display_name="Test Kernel",
+                context_dir=str(tmp_path),
+                api_base_url="https://api.qbraid.com",
+                api_key="test-key",
+            )
+
+        assert exc_info.value.code == 1
 
 
 @pytest.mark.unit
