@@ -11,9 +11,9 @@ from typing import Dict, Optional
 
 import requests
 from validate_dockerfile import (
+    KERNEL_NAME_PATTERN,
     SUPPORTED_LANGUAGES,
     extract_dockerfile_labels,
-    KERNEL_NAME_PATTERN,
 )
 
 logger = logging.getLogger(__name__)
