@@ -14,7 +14,6 @@ class TestCourseDeployer:
             repo_read_token="token",
             repo_url="https://github.com/qBraid/upload-course-action",
             commit_sha="abc1234",
-            force_duplicate_questions=False,
         )
 
     def test_get_common_payload_includes_integer_run_attempt(self, monkeypatch):

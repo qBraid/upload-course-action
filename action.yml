@@ -20,10 +20,6 @@ inputs:
     description: 'Type of article (course or blog)'
     required: false
     default: 'course'
-  force-duplicate-questions:
-    description: 'Whether to force duplicate questions'
-    required: false
-    default: 'false'
   draft:
     description: 'Whether to create a draft course (true or false)'
     required: false
@@ -115,8 +111,7 @@ runs:
           --repo-read-token '${{ inputs.repo-read-token }}' \
           --repo-url '${{ github.server_url }}/${{ github.repository }}' \
           --commit-sha '${{ github.sha }}' \
-          --article-type '${{ inputs.article-type }}' \
-          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}'
+          --article-type '${{ inputs.article-type }}'
 
     - name: Stage 5b - Update Course
       if: inputs.mode == 'update'
@@ -129,8 +124,7 @@ runs:
           --repo-read-token '${{ inputs.repo-read-token }}' \
           --repo-url '${{ github.server_url }}/${{ github.repository }}' \
           --commit-sha '${{ github.sha }}' \
-          --article-type '${{ inputs.article-type }}' \
-          --force-duplicate-questions '${{ inputs.force-duplicate-questions }}'
+          --article-type '${{ inputs.article-type }}'
 
     - name: Stage 6 - Poll status end point for completion
       id: poll-status
