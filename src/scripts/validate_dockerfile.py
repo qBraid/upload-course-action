@@ -169,7 +169,7 @@ def validate_dockerfile(content: str) -> DockerfileValidationResult:
 
     # 1. Check required LABEL directives
     labels = _parse_labels(lines)
-    for required_label in REQUIRED_LABELS:
+    for required_label in sorted(REQUIRED_LABELS):
         if required_label not in labels:
             result.add_error(f"Missing required LABEL: {required_label}")
 
