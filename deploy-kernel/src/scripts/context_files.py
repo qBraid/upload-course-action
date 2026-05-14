@@ -11,9 +11,7 @@ def _load_shared_context_files_module():
     repo_root = Path(__file__).resolve().parents[3]
     shared_path = repo_root / "src" / "scripts" / "context_files.py"
 
-    spec = importlib.util.spec_from_file_location(
-        "shared_context_files", shared_path
-    )
+    spec = importlib.util.spec_from_file_location("shared_context_files", shared_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"Unable to load shared context_files from {shared_path}")
 

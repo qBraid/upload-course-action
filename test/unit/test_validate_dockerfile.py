@@ -631,9 +631,7 @@ class TestCheckCopyAddSources:
         assert "a.txt" in errors[0]
 
     def test_url_source_skipped(self):
-        errors = _check_copy_add_sources(
-            ["ADD https://example.com/x.tar /opt/"], set()
-        )
+        errors = _check_copy_add_sources(["ADD https://example.com/x.tar /opt/"], set())
         assert errors == []
 
     def test_var_interpolation_warns_not_fails(self):

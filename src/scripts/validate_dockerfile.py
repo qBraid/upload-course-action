@@ -181,9 +181,7 @@ def _parse_copy_add_sources(line: str) -> Optional[List[str]]:
     return tokens[:-1]
 
 
-def _check_copy_add_sources(
-    lines: List[str], available: Set[str]
-) -> List[str]:
+def _check_copy_add_sources(lines: List[str], available: Set[str]) -> List[str]:
     """Errors for COPY/ADD source paths missing from the packaged context.
 
     URLs and `${VAR}` build-arg interpolations are skipped — the former
@@ -208,9 +206,7 @@ def _check_copy_add_sources(
             normalized = src.lstrip("./")
             top = normalized.split("/", 1)[0]
             if top and top not in available:
-                errors.append(
-                    f"COPY/ADD source '{src}' not found in build context"
-                )
+                errors.append(f"COPY/ADD source '{src}' not found in build context")
     return errors
 
 

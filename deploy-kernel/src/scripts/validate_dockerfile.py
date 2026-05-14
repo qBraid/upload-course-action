@@ -15,7 +15,9 @@ def _load_shared_validator_module():
         "shared_validate_dockerfile", shared_validator_path
     )
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"Unable to load shared validator from {shared_validator_path}")
+        raise RuntimeError(
+            f"Unable to load shared validator from {shared_validator_path}"
+        )
 
     module = importlib.util.module_from_spec(spec)
     sys.path.insert(0, str(shared_validator_path.parent))
