@@ -16,6 +16,8 @@ vd_spec.loader.exec_module(vd_module)
 DockerfileValidationResult = vd_module.DockerfileValidationResult
 KERNEL_NAME_PATTERN = vd_module.KERNEL_NAME_PATTERN
 SUPPORTED_LANGUAGES = vd_module.SUPPORTED_LANGUAGES
+_check_copy_add_sources = vd_module._check_copy_add_sources
+_parse_copy_add_sources = vd_module._parse_copy_add_sources
 _get_cmd_or_entrypoint = vd_module._get_cmd_or_entrypoint
 _get_final_user = vd_module._get_final_user
 _has_expose_8888 = vd_module._has_expose_8888
@@ -566,3 +568,116 @@ class TestValidateDockerfileFile:
         with pytest.raises(SystemExit) as exc_info:
             validate_dockerfile_file(str(dockerfile_path))
         assert exc_info.value.code == 1
+
+
+VALID_BASE = """\
+FROM python:3.11-slim
+LABEL qbraid.kernel.name="my_kernel" qbraid.kernel.language="python" qbraid.kernel.display_name="My Kernel"
+COPY kernel.json /usr/local/share/jupyter/kernels/my_kernel/kernel.json
+EXPOSE 8888
+USER 1000
+CMD ["jupyter", "kernelgateway"]
+"""
+
+
+@pytest.mark.unit
+class TestParseCopyAddSources:
+    """Tokenize COPY/ADD source paths."""
+
+    def test_simple_copy(self):
+        assert _parse_copy_add_sources("COPY a.txt /dst/") == ["a.txt"]
+
+    def test_multiple_sources(self):
+        assert _parse_copy_add_sources("COPY a.txt b.txt /dst/") == [
+            "a.txt",
+            "b.txt",
+        ]
+
+    def test_add_directive(self):
+        assert _parse_copy_add_sources("ADD foo.tar.gz /opt/") == ["foo.tar.gz"]
+
+    def test_non_copy_returns_none(self):
+        assert _parse_copy_add_sources("RUN echo hi") is None
+
+    def test_multi_stage_from_skipped(self):
+        assert _parse_copy_add_sources("COPY --from=builder /out /dst/") is None
+
+    def test_chown_chmod_flags_stripped(self):
+        assert _parse_copy_add_sources("COPY --chown=1000:1000 a.txt /dst/") == [
+            "a.txt"
+        ]
+        assert _parse_copy_add_sources("COPY --chmod=755 a.txt /dst/") == ["a.txt"]
+
+    def test_json_array_form(self):
+        assert _parse_copy_add_sources('COPY ["a.txt", "b.txt", "/dst/"]') == [
+            "a.txt",
+            "b.txt",
+        ]
+
+    def test_too_few_args(self):
+        assert _parse_copy_add_sources("COPY a.txt") is None
+
+
+@pytest.mark.unit
+class TestCheckCopyAddSources:
+    """Verify COPY/ADD sources exist in the packaged build context."""
+
+    def test_present_source_passes(self):
+        assert _check_copy_add_sources(["COPY a.txt /dst/"], {"a.txt"}) == []
+
+    def test_missing_source_fails(self):
+        errors = _check_copy_add_sources(["COPY a.txt /dst/"], set())
+        assert len(errors) == 1
+        assert "a.txt" in errors[0]
+
+    def test_url_source_skipped(self):
+        errors = _check_copy_add_sources(
+            ["ADD https://example.com/x.tar /opt/"], set()
+        )
+        assert errors == []
+
+    def test_var_interpolation_warns_not_fails(self):
+        # `$VAR` references can't be resolved statically; we don't fail on them.
+        assert _check_copy_add_sources(["COPY ${VAR}/file /dst/"], set()) == []
+
+    def test_dotslash_prefix_normalized(self):
+        assert _check_copy_add_sources(["COPY ./a.txt /dst/"], {"a.txt"}) == []
+
+    def test_subdir_top_level_check(self):
+        # `COPY src/main.py …` should pass when `src` is in the packaged set.
+        assert _check_copy_add_sources(["COPY src/main.py /dst/"], {"src"}) == []
+        errors = _check_copy_add_sources(["COPY src/main.py /dst/"], set())
+        assert len(errors) == 1
+
+
+@pytest.mark.unit
+class TestValidateDockerfileWithContext:
+    """Integration: validate_dockerfile gates on the context_files set."""
+
+    def test_no_context_files_skips_check(self):
+        # Backwards-compat: if the caller didn't compute a packaged set,
+        # the COPY/ADD presence check doesn't run.
+        content = VALID_BASE + "COPY pyproject.toml /app/\n"
+        result = validate_dockerfile(content, context_files=None)
+        assert result.is_valid
+
+    def test_missing_context_file_reported(self):
+        content = VALID_BASE + "COPY pyproject.toml /app/\n"
+        result = validate_dockerfile(content, context_files={"kernel.json"})
+        assert not result.is_valid
+        assert any("pyproject.toml" in e for e in result.errors)
+
+    def test_present_context_file_passes(self):
+        content = VALID_BASE + "COPY pyproject.toml /app/\n"
+        result = validate_dockerfile(
+            content, context_files={"kernel.json", "pyproject.toml"}
+        )
+        assert result.is_valid
+
+    def test_bloqade_repro(self):
+        """The exact failure that wedged the bloqade build (2026-05-14)."""
+        content = VALID_BASE + "COPY pyproject.toml uv.lock ./\n"
+        result = validate_dockerfile(content, context_files={"kernel.json"})
+        assert not result.is_valid
+        assert any("pyproject.toml" in e for e in result.errors)
+        assert any("uv.lock" in e for e in result.errors)

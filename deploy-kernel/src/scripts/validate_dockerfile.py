@@ -39,6 +39,10 @@ validate_dockerfile_file = _shared_validator.validate_dockerfile_file
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python validate_dockerfile.py <dockerfile_path>", file=sys.stderr)
+        print(
+            "Usage: python validate_dockerfile.py <dockerfile_path> [<context_dir>]",
+            file=sys.stderr,
+        )
         sys.exit(1)
-    validate_dockerfile_file(sys.argv[1])
+    ctx = sys.argv[2] if len(sys.argv) >= 3 else None
+    validate_dockerfile_file(sys.argv[1], ctx)

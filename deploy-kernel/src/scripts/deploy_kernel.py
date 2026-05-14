@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import requests
+from context_files import list_context_files
 from validate_dockerfile import (
     KERNEL_NAME_PATTERN,
     SUPPORTED_LANGUAGES,
@@ -32,24 +33,6 @@ REQUEST_TIMEOUT_SECONDS = 30
 KERNEL_ALREADY_EXISTS_CODE = "KERNEL_ALREADY_EXISTS"
 FATAL_POLL_STATUS_CODES = {400, 401, 403, 404}
 DEFAULT_TIMEOUT_SECONDS = 1800
-SKIPPED_CONTEXT_FILES = frozenset(
-    {
-        ".gitignore",
-        ".dockerignore",
-        ".env",
-        ".env.local",
-        ".env.production",
-        ".env.staging",
-        ".npmrc",
-        ".pypirc",
-        ".netrc",
-        "id_rsa",
-        "id_ed25519",
-        "credentials",
-    }
-)
-SKIPPED_CONTEXT_SUFFIXES = (".pem", ".key", ".p12", ".crt", ".kubeconfig")
-SKIPPED_CONTEXT_SUBSTRINGS = ("secret", "token", "password", "credential")
 
 
 def write_github_output(key: str, value: str) -> None:
@@ -113,35 +96,17 @@ def _parse_status_response(
 
 
 def _collect_context_files(context_dir: Path, dockerfile_path: Path) -> Dict[str, str]:
-    """Collect and base64-encode context files from the context directory."""
-    context_files = {}
-    if not context_dir.is_dir():
-        return context_files
+    """Collect and base64-encode context files from the context directory.
 
-    for item in context_dir.iterdir():
-        if not item.is_file() or item == dockerfile_path:
-            continue
-
-        item_name = item.name
-        lowered_name = item_name.lower()
-        if (
-            item_name in SKIPPED_CONTEXT_FILES
-            or item_name.startswith(".")
-            or lowered_name.endswith(SKIPPED_CONTEXT_SUFFIXES)
-            or any(part in lowered_name for part in SKIPPED_CONTEXT_SUBSTRINGS)
-        ):
-            logger.info(f"  Skipping sensitive context file: {item_name}")
-            continue
-
-        # Skip very large files (> 10MB)
-        if item.stat().st_size > 10 * 1024 * 1024:
-            logger.warning(
-                f"Skipping large file: {item.name} ({item.stat().st_size} bytes)"
-            )
-            continue
-        context_files[item.name] = _encode_file(item)
-        logger.info(f"  Including context file: {item.name}")
-
+    Uses ``list_context_files`` so the preflight validator (which consults
+    the same listing) sees exactly what reaches Cloud Build — preventing
+    skew between "what passed validation" and "what got uploaded".
+    """
+    context_files: Dict[str, str] = {}
+    for name in list_context_files(context_dir, dockerfile_path):
+        path = context_dir / name
+        context_files[name] = _encode_file(path)
+        logger.info(f"  Including context file: {name}")
     return context_files
 
 

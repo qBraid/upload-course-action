@@ -67,7 +67,8 @@ runs:
       shell: bash
       run: |
         python ${{ github.action_path }}/src/scripts/validate_dockerfile.py \
-          "${{ inputs.dockerfile-path }}"
+          "${{ inputs.dockerfile-path }}" \
+          "${{ inputs.context-dir }}"
 
     - name: Deploy kernel
       id: deploy-kernel

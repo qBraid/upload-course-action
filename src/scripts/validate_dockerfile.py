@@ -1,12 +1,15 @@
 # Copyright (C) 2026 qBraid
 
+import json
 import re
+import shlex
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from common import setup_logging
+from context_files import list_context_files
 
 logger = setup_logging(__name__)
 
@@ -141,7 +144,79 @@ def _join_continuation_lines(raw_lines: List[str]) -> List[str]:
     return joined
 
 
-def validate_dockerfile(content: str) -> DockerfileValidationResult:
+def _parse_copy_add_sources(line: str) -> Optional[List[str]]:
+    """Return source paths from a COPY/ADD line, or None to skip.
+
+    None means: not a COPY/ADD, multi-stage `--from=` copy (reads from
+    another build stage, not the context), or a syntactically odd line
+    we don't want to flag here.
+    """
+    stripped = line.strip()
+    upper = stripped.upper()
+    if not (upper.startswith("COPY ") or upper.startswith("ADD ")):
+        return None
+
+    args_str = stripped.split(None, 1)[1]
+    if args_str.lstrip().startswith("["):
+        try:
+            tokens = json.loads(args_str)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(tokens, list) or len(tokens) < 2:
+            return None
+    else:
+        try:
+            tokens = shlex.split(args_str)
+        except ValueError:
+            return None
+
+    tokens = [
+        t for t in tokens if not (t.startswith("--chown=") or t.startswith("--chmod="))
+    ]
+    if any(t.startswith("--from=") for t in tokens):
+        return None
+    tokens = [t for t in tokens if not t.startswith("--")]
+    if len(tokens) < 2:
+        return None
+    return tokens[:-1]
+
+
+def _check_copy_add_sources(
+    lines: List[str], available: Set[str]
+) -> List[str]:
+    """Errors for COPY/ADD source paths missing from the packaged context.
+
+    URLs and `${VAR}` build-arg interpolations are skipped — the former
+    are pulled by Docker at build time, the latter can't be resolved
+    statically. Top-level segment is checked against `available` so a
+    `COPY src/main.py …` line passes when `src` is in the context dir.
+    """
+    errors: List[str] = []
+    for line in lines:
+        sources = _parse_copy_add_sources(line)
+        if sources is None:
+            continue
+        for src in sources:
+            if "://" in src:
+                continue
+            if "$" in src:
+                logger.warning(
+                    "Skipping COPY/ADD source with build-arg interpolation: %s",
+                    src,
+                )
+                continue
+            normalized = src.lstrip("./")
+            top = normalized.split("/", 1)[0]
+            if top and top not in available:
+                errors.append(
+                    f"COPY/ADD source '{src}' not found in build context"
+                )
+    return errors
+
+
+def validate_dockerfile(
+    content: str, context_files: Optional[Set[str]] = None
+) -> DockerfileValidationResult:
     """
     Validate a Dockerfile for qBraid kernel compatibility.
 
@@ -153,6 +228,9 @@ def validate_dockerfile(content: str) -> DockerfileValidationResult:
     5. No --privileged flags
     6. kernel.json is copied or created
     7. Kernel name matches naming pattern
+    8. COPY/ADD sources exist in the packaged build context (when
+       ``context_files`` is provided — the set of names returned by
+       ``context_files.list_context_files``).
     """
     result = DockerfileValidationResult()
 
@@ -226,13 +304,28 @@ def validate_dockerfile(content: str) -> DockerfileValidationResult:
             "It should be placed under /usr/local/share/jupyter/kernels/<name>/"
         )
 
+    # 7. When the caller provided the packaged context, verify every
+    #    COPY/ADD source resolves. Catches the class of failure where a
+    #    user's Dockerfile says `COPY pyproject.toml ./` but the file
+    #    wasn't included in the upload — would otherwise fail minutes
+    #    later inside Cloud Build with a useless tarball error.
+    if context_files is not None:
+        for error in _check_copy_add_sources(lines, context_files):
+            result.add_error(error)
+
     return result
 
 
-def validate_dockerfile_file(dockerfile_path: str) -> None:
+def validate_dockerfile_file(
+    dockerfile_path: str, context_dir: Optional[str] = None
+) -> None:
     """
     Validate a Dockerfile from a file path.
     Exits with code 1 on validation failure.
+
+    When ``context_dir`` is provided, also enforces that every COPY/ADD
+    source in the Dockerfile exists in the packaged context (the set of
+    files that would actually reach Cloud Build, per ``list_context_files``).
     """
     path = Path(dockerfile_path)
     if not path.exists():
@@ -240,7 +333,11 @@ def validate_dockerfile_file(dockerfile_path: str) -> None:
         sys.exit(1)
 
     content = path.read_text()
-    result = validate_dockerfile(content)
+    context_files: Optional[Set[str]] = None
+    if context_dir is not None:
+        context_files = list_context_files(Path(context_dir), path)
+
+    result = validate_dockerfile(content, context_files=context_files)
 
     if not result.is_valid:
         logger.error("Dockerfile validation failed:")
@@ -253,6 +350,9 @@ def validate_dockerfile_file(dockerfile_path: str) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        logger.error("Usage: python validate_dockerfile.py <dockerfile_path>")
+        logger.error(
+            "Usage: python validate_dockerfile.py <dockerfile_path> [<context_dir>]"
+        )
         sys.exit(1)
-    validate_dockerfile_file(sys.argv[1])
+    ctx = sys.argv[2] if len(sys.argv) >= 3 else None
+    validate_dockerfile_file(sys.argv[1], ctx)
