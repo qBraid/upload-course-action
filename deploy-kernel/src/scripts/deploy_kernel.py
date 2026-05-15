@@ -7,7 +7,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from context_files import list_context_files
@@ -158,6 +158,29 @@ def _validate_dockerfile_labels(
             sys.exit(1)
 
 
+def _build_resources(
+    cpu: Optional[str],
+    memory: Optional[str],
+    memory_limit: Optional[str],
+) -> Optional[Dict[str, str]]:
+    """Build the resources subdoc, omitting fields the caller did not supply.
+
+    Returning None when every input is empty means the API leaves the kernel's
+    existing resources untouched on a redeploy — callers who don't care about
+    sizing don't accidentally reset previously tuned values. The API enforces
+    a 2 vCPU / 4 GiB minimum and a 4 vCPU / 8 GiB maximum on any field that is
+    sent; sub-floor values come back as a 400 here, not a broken pod later.
+    """
+    resources: Dict[str, str] = {}
+    if cpu:
+        resources["defaultCpu"] = cpu
+    if memory:
+        resources["defaultMemory"] = memory
+    if memory_limit:
+        resources["defaultMemoryLimit"] = memory_limit
+    return resources or None
+
+
 def deploy_kernel(
     dockerfile_path: str,
     kernel_name: str,
@@ -167,6 +190,9 @@ def deploy_kernel(
     api_base_url: str,
     api_key: Optional[str] = None,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
+    cpu: Optional[str] = None,
+    memory: Optional[str] = None,
+    memory_limit: Optional[str] = None,
 ) -> None:
     """Deploy a custom kernel to qBraid."""
     dockerfile = Path(dockerfile_path)
@@ -201,7 +227,7 @@ def deploy_kernel(
         "X-API-Key": resolved_api_key,
         "Content-Type": "application/json",
     }
-    payload = {
+    payload: Dict[str, Any] = {
         "kernelName": kernel_name,
         "language": language,
         "displayName": display_name,
@@ -209,6 +235,11 @@ def deploy_kernel(
     }
     if context_files:
         payload["contextFiles"] = context_files
+
+    resources = _build_resources(cpu, memory, memory_limit)
+    if resources:
+        payload["resources"] = resources
+        logger.info("Requesting resources: %s", resources)
 
     url = f"{api_base_url}/kernels/deploy"
     try:
@@ -311,6 +342,9 @@ if __name__ == "__main__":
     parser.add_argument("--context-dir", default=".")
     parser.add_argument("--api-base-url", default="https://api-v2.qbraid.com/api/v1")
     parser.add_argument("--timeout-seconds", type=int, default=DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument("--cpu", default=None)
+    parser.add_argument("--memory", default=None)
+    parser.add_argument("--memory-limit", default=None)
 
     args = parser.parse_args()
     deploy_kernel(
@@ -322,4 +356,7 @@ if __name__ == "__main__":
         api_base_url=args.api_base_url,
         api_key=args.api_key,
         timeout_seconds=args.timeout_seconds,
+        cpu=args.cpu or None,
+        memory=args.memory or None,
+        memory_limit=args.memory_limit or None,
     )

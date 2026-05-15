@@ -35,6 +35,15 @@ inputs:
     description: 'Maximum time to wait for deployment to finish'
     required: false
     default: '1800'
+  cpu:
+    description: 'Default CPU per kernel pod (e.g. "2", "3", "2500m"). Server enforces a minimum of 2 cores and a maximum of 4. Omit to leave the kernel''s existing default unchanged.'
+    required: false
+  memory:
+    description: 'Default memory request per kernel pod (e.g. "4Gi", "8Gi"). Server enforces a minimum of 4 GiB and a maximum of 8 GiB. Omit to leave the kernel''s existing default unchanged.'
+    required: false
+  memory-limit:
+    description: 'Default memory limit per kernel pod (must be >= memory). Same units and ceiling as memory. Omit to leave the kernel''s existing default unchanged.'
+    required: false
 
 outputs:
   kernel-name:
@@ -85,4 +94,7 @@ runs:
           --display-name "${{ inputs.display-name }}" \
           --context-dir "${{ inputs.context-dir }}" \
           --api-base-url "${{ inputs.api-base-url }}" \
-          --timeout-seconds "${{ inputs.timeout-seconds }}"
+          --timeout-seconds "${{ inputs.timeout-seconds }}" \
+          --cpu "${{ inputs.cpu }}" \
+          --memory "${{ inputs.memory }}" \
+          --memory-limit "${{ inputs.memory-limit }}"
