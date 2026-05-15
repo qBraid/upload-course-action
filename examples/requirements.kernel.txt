@@ -1,0 +1,7 @@
+# Example requirements.txt for custom kernel
+# Include any additional packages your kernel needs
+
+numpy
+pandas
+scikit-learn
+matplotlib
