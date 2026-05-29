@@ -18,7 +18,6 @@ class TestCourseCreator:
         self.creator = CourseCreator(
             api_key=self.api_key,
             article_type="course",
-            force_duplicate_questions=True,
             repo_read_token=self.token,
             repo_url=self.url,
             commit_sha=self.sha,
@@ -45,7 +44,7 @@ class TestCourseCreator:
 
         payload = json.loads(kwargs["data"])
         assert payload["repoReadToken"] == self.token
-        assert payload["forceDuplicateQuestions"] is True
+        assert payload["forceDuplicateQuestions"] is False
         assert kwargs["headers"]["X-API-Key"] == self.api_key
         assert args[0] == "POST"
         assert "/learn/articles/course/ingest" in args[1]
@@ -69,7 +68,7 @@ class TestCourseCreator:
 
         payload = json.loads(kwargs["data"])
         assert payload["repoReadToken"] == self.token
-        assert payload["forceDuplicateQuestions"] is True
+        assert payload["forceDuplicateQuestions"] is False
         assert kwargs["headers"]["X-API-Key"] == self.api_key
         assert args[0] == "POST"
         assert "/learn/articles/course/ingest" in args[1]

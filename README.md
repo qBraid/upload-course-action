@@ -57,7 +57,6 @@ jobs:
 | `repo-read-token` | GitHub token with read access to the repository | **Yes** | N/A |
 | `course-json-path` | Path to `course.json` file | No | `course.json` |
 | `article-type` | Type of article to create (`course` or `blog`) | No | `course` |
-| `force-duplicate-questions` | Whether to force upload duplicate questions (`true` or `false`) | No | `false` |
 | `max-poll-attempts` | Maximum polling attempts before timing out | No | `20` |
 | `poll-interval-seconds` | Seconds to wait between polling attempts | No | `15` |
 | `max-consecutive-errors` | Maximum consecutive polling errors before failing | No | `5` |
