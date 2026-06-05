@@ -91,14 +91,15 @@ Agents should validate or generate `course.json` with the following structure:
   "courseDescription": "Course description",
   "visibility": "public",
   "imageLink": {
-    "darkLogo": "https://example.com/dark-logo.jpg",
-    "lightLogo": "https://example.com/light-logo.jpg"
+    "darkLogo": "assets/images/dark-logo.png",
+    "lightLogo": "assets/images/light-logo.png"
   },
   "tags": ["tag1", "tag2"],
   "deployedTo": ["qbraid.com"],
   "content": [
     {
       "chapterName": "Chapter Name",
+      "chapterFileName": "notebook.ipynb",
       "chapterNumber": 1,
       "baseFilePath": "./path/to/notebook.ipynb",
       "kernelName": "python3",
@@ -113,6 +114,7 @@ Agents should validate or generate `course.json` with the following structure:
 
 - **Notebooks**: Must exist at paths specified in `course.json`, max 5MB each
 - **Images**: Referenced images must exist and be under 1MB
+- **Logos**: `imageLink.darkLogo` and `imageLink.lightLogo` are repo-relative paths to image files (e.g. `assets/images/dark-logo.png`), not external URLs. Leave as empty strings (`""`) to use the platform default.
 - **Security**: Notebooks are scanned for XSS, script injection, and credential exposure
 
 ## Agent Workflow Steps

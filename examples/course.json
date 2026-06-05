@@ -3,8 +3,8 @@
   "courseDescription": "A beginner-friendly course on the fundamentals of quantum computing, covering qubits, quantum gates, and basic algorithms.",
   "visibility": "public",
   "imageLink": {
-    "darkLogo": "https://img.freepik.com/free-vector/gradient-quantum-illustration_52683-80504.jpg",
-    "lightLogo": "https://img.freepik.com/free-vector/gradient-quantum-illustration_52683-80504.jpg"
+    "darkLogo": "assets/images/dark-logo.png",
+    "lightLogo": "assets/images/light-logo.png"
   },
   "tags": [
     "quantum computing",
