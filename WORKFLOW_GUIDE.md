@@ -24,14 +24,15 @@ Your repository must contain a `course.json` file in the root with the following
   "courseDescription": "A beginner-friendly course on quantum computing fundamentals",
   "visibility": "public",
   "imageLink": {
-    "darkLogo": "https://example.com/dark-logo.jpg",
-    "lightLogo": "https://example.com/light-logo.jpg"
+    "darkLogo": "assets/images/dark-logo.png",
+    "lightLogo": "assets/images/light-logo.png"
   },
   "tags": ["quantum computing", "beginner"],
   "deployedTo": ["qbraid.com"],
   "content": [
     {
       "chapterName": "Introduction to Python",
+      "chapterFileName": "intro.ipynb",
       "chapterNumber": 1,
       "baseFilePath": "./chapter1/intro.ipynb",
       "kernelName": "python3",
@@ -55,9 +56,9 @@ Your repository must contain a `course.json` file in the root with the following
 -   **courseName** (string): Name of the course
 -   **courseDescription** (string): Brief description of the course
 -   **visibility** (string): Visibility setting (e.g., "public", "private")
--   **imageLink** (object): Logo URLs for dark and light themes
-    -   **darkLogo** (string): URL for dark theme logo
-    -   **lightLogo** (string): URL for light theme logo
+-   **imageLink** (object): Logo image paths for dark and light themes
+    -   **darkLogo** (string): Repo-relative path to the dark theme logo image (e.g. `assets/images/dark-logo.png`)
+    -   **lightLogo** (string): Repo-relative path to the light theme logo image (e.g. `assets/images/light-logo.png`)
 -   **tags** (array of strings): List of tags for the course
 -   **deployedTo** (array of strings): Deployment targets (allowed: "qbraid.com", "quera.com")
 -   **content** (array): List of chapters
@@ -65,6 +66,7 @@ Your repository must contain a `course.json` file in the root with the following
 ### Chapter Fields
 
 -   **chapterName** (string): Display name for the chapter
+-   **chapterFileName** (string): Notebook file name for the chapter (e.g. `intro.ipynb`)
 -   **chapterNumber** (number): Chapter number/order
 -   **baseFilePath** (string): Path to the chapter notebook from repo root (max 5MB)
 -   **kernelName** (string): Jupyter kernel to use (e.g., "python3", "qbraid_python")
