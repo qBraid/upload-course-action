@@ -1,10 +1,8 @@
 # Copyright (C) 2026 qBraid
 
 import json
-import logging
 import os
 import re
-import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
@@ -20,6 +18,10 @@ from common import (
 )
 from qbraid_core import QbraidSessionV1
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+
+BOOLEAN_TRUE_VALUES = ("true", "1", "yes", "on")
+BOOLEAN_FALSE_VALUES = ("false", "0", "no", "off")
+CERTIFICATE_CRITERIA_TYPES = ("completion", "points")
 
 logger = setup_logging(__name__)
 
@@ -51,13 +53,13 @@ def validate_boolean(value: str) -> bool:
     if not value:
         raise ValidationError("Boolean value cannot be empty")
     value_lower = value.strip().lower()
-    if value_lower in ("true", "1", "yes", "on"):
+    if value_lower in BOOLEAN_TRUE_VALUES:
         return True
-    elif value_lower in ("false", "0", "no", "off"):
+    elif value_lower in BOOLEAN_FALSE_VALUES:
         return False
     else:
         raise ValidationError(
-            f"Invalid boolean value '{value}'. Must be one of: true, false, 1, 0, yes, no, on, off"
+            f"Invalid boolean value '{value}'. Must be one of: {', '.join(BOOLEAN_TRUE_VALUES + BOOLEAN_FALSE_VALUES)}"
         )
 
 
@@ -105,6 +107,68 @@ def validate_course_id(course_id: str) -> str:
     return course_id.strip()
 
 
+def validate_certificate_criteria_type(value: Optional[str]) -> str:
+    """Validate certificate criteria type."""
+    if not value or not value.strip():
+        return "completion"
+    value = value.strip().lower()
+    if value not in CERTIFICATE_CRITERIA_TYPES:
+        raise ValidationError(
+            f"Certificate criteria type must be '{CERTIFICATE_CRITERIA_TYPES[0]}' or '{CERTIFICATE_CRITERIA_TYPES[1]}'"
+        )
+    return value
+
+
+def validate_certificate_criteria_value(value: Optional[str]) -> Optional[float]:
+    """Validate certificate criteria value."""
+    if not value or not value.strip():
+        return None
+    try:
+        val = float(value)
+        if val < 0:
+            raise ValidationError("Certificate criteria value must be non-negative")
+        return val
+    except ValueError:
+        raise ValidationError("Certificate criteria value must be a number")
+
+
+def build_certificate_settings(
+    enabled: bool,
+    criteria_type: str,
+    criteria_value: Optional[float],
+) -> Dict[str, Any]:
+    """Build certificate settings dict from individual fields.
+
+    If enabled is False, returns settings with enabled=False.
+    also set the criteria to completion with value 100%, since the enabled is false,
+    the criteria wont be used for any operation,
+    but it will make sure the payload is always in the same format,
+    and avoid any potential issue on backend side due to missing criteria when enabled is false.
+    """
+    default_criteria_type = "completion"
+    default_criteria_value = 100.0
+
+    settings: Dict[str, Any] = {
+        "enabled": enabled,
+        "criteria": {
+            "type": default_criteria_type,
+            "value": default_criteria_value,
+        },
+    }
+
+    if enabled:
+        criteria: Dict[str, Any] = {"type": criteria_type}
+        if criteria_value is not None:
+            if criteria_type == default_criteria_type and criteria_value > 100:
+                raise ValidationError(
+                    "Certificate criteria value cannot exceed 100 for completion type"
+                )
+            criteria["value"] = criteria_value
+        settings["criteria"] = criteria
+
+    return settings
+
+
 class CourseDeployer:
     """Base class for handling course deployment (create or update) on qBraid."""
 
@@ -114,13 +178,17 @@ class CourseDeployer:
         repo_read_token: str,
         repo_url: str,
         commit_sha: str,
+        article_type: str = "course",
         force_duplicate_questions: bool = True,
+        certificate_settings: Optional[Dict[str, Any]] = None,
     ):
         self.api_key = api_key
         self.repo_read_token = repo_read_token
         self.repo_url = repo_url
         self.commit_sha = commit_sha
+        self.article_type = article_type
         self.force_duplicate_questions = force_duplicate_questions
+        self.certificate_settings = certificate_settings
         self.session = QbraidSessionV1(api_key=api_key)
         self.session.base_url = Config.API_BASE_URL
 
@@ -149,6 +217,16 @@ class CourseDeployer:
             "repoUrl": self.repo_url,
             "commitSha": self.commit_sha,
         }
+
+        if self.certificate_settings is not None:
+            certificates_enabled = self.certificate_settings.get("enabled") is True
+            if self.article_type == "course":
+                payload["data"]["certificateSettings"] = self.certificate_settings
+            elif certificates_enabled:
+                logger.warning(
+                    f"Certificate settings ignored: only applicable for article type 'course', "
+                    f"not '{self.article_type}'"
+                )
 
         if run_attempt:
             try:
