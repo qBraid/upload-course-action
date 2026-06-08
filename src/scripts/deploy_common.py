@@ -1,10 +1,8 @@
 # Copyright (C) 2026 qBraid
 
 import json
-import logging
 import os
 import re
-import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib.parse import urlparse
@@ -109,7 +107,7 @@ def validate_course_id(course_id: str) -> str:
     return course_id.strip()
 
 
-def validate_certificate_criteria_type(value: str) -> str:
+def validate_certificate_criteria_type(value: Optional[str]) -> str:
     """Validate certificate criteria type."""
     if not value or not value.strip():
         return "completion"
@@ -121,7 +119,7 @@ def validate_certificate_criteria_type(value: str) -> str:
     return value
 
 
-def validate_certificate_criteria_value(value: str) -> Optional[float]:
+def validate_certificate_criteria_value(value: Optional[str]) -> Optional[float]:
     """Validate certificate criteria value."""
     if not value or not value.strip():
         return None
@@ -138,7 +136,7 @@ def build_certificate_settings(
     enabled: bool,
     criteria_type: str,
     criteria_value: Optional[float],
-) -> Optional[Dict[str, Any]]:
+) -> Dict[str, Any]:
     """Build certificate settings dict from individual fields.
 
     If enabled is False, returns settings with enabled=False.
@@ -220,13 +218,15 @@ class CourseDeployer:
             "commitSha": self.commit_sha,
         }
 
-        if self.certificate_settings and self.article_type == "course":
-            payload["data"]["certificateSettings"] = self.certificate_settings
-        elif self.certificate_settings and self.article_type != "course":
-            logger.warning(
-                f"Certificate settings ignored: only applicable for article type 'course', "
-                f"not '{self.article_type}'"
-            )
+        if self.certificate_settings is not None:
+            certificates_enabled = self.certificate_settings.get("enabled") is True
+            if self.article_type == "course":
+                payload["data"]["certificateSettings"] = self.certificate_settings
+            elif certificates_enabled:
+                logger.warning(
+                    f"Certificate settings ignored: only applicable for article type 'course', "
+                    f"not '{self.article_type}'"
+                )
 
         if run_attempt:
             try:

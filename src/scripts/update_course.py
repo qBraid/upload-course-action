@@ -4,7 +4,7 @@ import argparse
 import sys
 from typing import Any, Dict, Optional
 
-from common import ActionError, ArticleType, Config, ValidationError, setup_logging
+from common import ActionError, ArticleType, ValidationError, setup_logging
 from deploy_common import (
     CourseDeployer,
     build_certificate_settings,

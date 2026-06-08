@@ -290,6 +290,30 @@ class TestCourseDeployer:
             mock_logger.warning.assert_called_once()
             assert "Certificate settings ignored" in mock_logger.warning.call_args[0][0]
 
+    def test_get_common_payload_silently_ignores_disabled_certificate_settings_for_blog(
+        self,
+    ):
+        """Test disabled certificate settings do not warn for blog type."""
+        cert_settings = {
+            "enabled": False,
+            "criteria": {"type": "completion", "value": 100.0},
+        }
+        deployer = CourseDeployer(
+            api_key="key",
+            repo_read_token="token",
+            repo_url="https://github.com/qBraid/upload-course-action",
+            commit_sha="abc1234",
+            article_type="blog",
+            certificate_settings=cert_settings,
+        )
+        deployer.load_course_data = mock.Mock(return_value={"courseName": "Demo"})
+
+        with mock.patch("deploy_common.logger") as mock_logger:
+            payload = deployer.get_common_payload()
+
+            assert "certificateSettings" not in payload["data"]
+            mock_logger.warning.assert_not_called()
+
     def test_get_common_payload_no_certificate_settings(self):
         """Test get_common_payload without certificate settings."""
         deployer = CourseDeployer(
