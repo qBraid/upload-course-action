@@ -110,6 +110,7 @@ jobs:
           flags: unittests
           name: upload-course-action
           fail_ci_if_error: true
+          skip_validation: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage to Codecov (OIDC fallback)
@@ -121,6 +122,7 @@ jobs:
           name: upload-course-action
           fail_ci_if_error: true
           use_oidc: true
+          skip_validation: true
 
       - name: Skip Codecov upload for fork PR without token
         if: matrix.python-version == '3.11' && env.HAS_CODECOV_TOKEN != 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true

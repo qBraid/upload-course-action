@@ -26,6 +26,9 @@ The Deploy Course Action is a composite GitHub Action that automates the deploym
 | `course-json-path` | string | `course.json` | Path to course configuration file |
 | `article-type` | string | `course` | Type of article (`course` or `blog`) |
 | `force-duplicate-questions` | string | `false` | Force upload duplicate questions (`true` or `false`) |
+| `certificate-enabled` | string | `false` | Enable certificates for this course (`true` or `false`) |
+| `certificate-criteria-type` | string | `completion` | Certificate criteria type: `completion` or `points` |
+| `certificate-criteria-value` | string | `100` | Criteria value (0-100 for completion, any number for points) |
 | `draft` | string | `false` | Create draft course (`true` or `false`) |
 
 ### Outputs

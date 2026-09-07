@@ -38,6 +38,15 @@ jobs:
           # Optional: Whether to force upload duplicate questions (defaults to 'false')
           force-duplicate-questions: 'false'
 
+          # Optional: Enable certificates for this course (defaults to 'false')
+          certificate-enabled: 'false'
+
+          # Optional: Certificate criteria type - 'completion' or 'points' (defaults to 'completion')
+          certificate-criteria-type: 'completion'
+
+          # Optional: Certificate criteria value (0-100 for completion, any number for points)
+          certificate-criteria-value: '100'
+
       - name: Show deployment results
         if: success()
         run: |
