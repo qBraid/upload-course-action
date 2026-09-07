@@ -1,18 +1,46 @@
 # Copyright (C) 2026 qBraid
 
-
 import json
 import os
 import sys
+import urllib.request
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional, Set
 
-from common import Config
-from common import ValidationError as ActionValidationError
-from common import setup_logging
+from common import Config, setup_logging
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 logger = setup_logging(__name__)
+
+MAX_KERNEL_NAME_SAMPLE = 10
+
+
+def _fetch_available_kernels(catalog_url: str) -> Optional[Set[str]]:
+    """Fetch the available kernel names from the configured catalog."""
+    try:
+        with urllib.request.urlopen(catalog_url, timeout=10) as resp:
+            catalog = json.loads(resp.read().decode())
+    except Exception:
+        logger.warning("Could not fetch kernel catalog from %s", catalog_url)
+        return None
+
+    kernels = set(catalog.get("kernels", {}).keys())
+    if not kernels:
+        logger.warning("Kernel catalog at %s is empty", catalog_url)
+        return None
+    return kernels
+
+
+def _format_missing_kernel_error(
+    kernel_name: str, catalog_url: str, available_kernels: Set[str]
+) -> str:
+    """Build a concise missing-kernel error without dumping the full catalog."""
+    sample = ", ".join(sorted(available_kernels)[:MAX_KERNEL_NAME_SAMPLE])
+    suffix = "" if len(available_kernels) <= MAX_KERNEL_NAME_SAMPLE else ", ..."
+    return (
+        f"Kernel '{kernel_name}' not found in catalog at {catalog_url}. "
+        f"Catalog contains {len(available_kernels)} kernels. Sample: [{sample}{suffix}]"
+    )
 
 
 class ImageLink(BaseModel):
@@ -95,6 +123,35 @@ class Course(BaseModel):
             )
         return v
 
+    @field_validator("content")
+    @classmethod
+    def check_kernel_references(cls, chapters: List["Chapter"]) -> List["Chapter"]:
+        """Validate kernel references when a catalog URL is explicitly configured."""
+        catalog_url = os.environ.get("KERNEL_CATALOG_URL")
+        if not catalog_url:
+            return chapters
+
+        available_kernels = _fetch_available_kernels(catalog_url)
+        if not available_kernels:
+            logger.warning("Skipping kernel name validation")
+            return chapters
+
+        for chapter in chapters:
+            if chapter.kernelName not in available_kernels:
+                raise ValueError(
+                    _format_missing_kernel_error(
+                        chapter.kernelName, catalog_url, available_kernels
+                    )
+                )
+            for section in chapter.sections or []:
+                if section.kernelName not in available_kernels:
+                    raise ValueError(
+                        _format_missing_kernel_error(
+                            section.kernelName, catalog_url, available_kernels
+                        )
+                    )
+        return chapters
+
 
 class CourseValidator:
     """Validates the course.json structure and file sizes."""
@@ -122,7 +179,7 @@ class CourseValidator:
         except ValidationError as e:
             logger.error("Validation failed for course.json")
             for error in e.errors():
-                loc = " -> ".join(str(l) for l in error["loc"])
+                loc = " -> ".join(str(location) for location in error["loc"])
                 logger.error(f"  Field: {loc}")
                 logger.error(f"  Error: {error['msg']}")
             sys.exit(1)

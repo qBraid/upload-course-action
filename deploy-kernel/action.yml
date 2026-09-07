@@ -1,0 +1,100 @@
+name: 'Deploy Custom Kernel to qBraid'
+description: 'Validates and deploys a custom Jupyter kernel image to qBraid qBook'
+author: 'qBraid'
+
+branding:
+  icon: 'cpu'
+  color: 'purple'
+
+inputs:
+  api-key:
+    description: 'qBraid API key for authentication'
+    required: true
+  dockerfile-path:
+    description: 'Path to the kernel Dockerfile'
+    required: false
+    default: 'Dockerfile.kernel'
+  kernel-name:
+    description: 'Unique kernel name (lowercase alphanumeric + underscore, 3-64 chars)'
+    required: true
+  language:
+    description: 'Kernel language (python, cpp, julia, r, rust, go, javascript)'
+    required: true
+  display-name:
+    description: 'Human-readable display name for the kernel'
+    required: true
+  context-dir:
+    description: 'Directory containing additional build context files (requirements.txt, kernel.json, etc.)'
+    required: false
+    default: '.'
+  api-base-url:
+    description: 'qBraid API base URL'
+    required: false
+    default: 'https://api-v2.qbraid.com/api/v1'
+  timeout-seconds:
+    description: 'Maximum time to wait for deployment to finish'
+    required: false
+    default: '1800'
+  cpu:
+    description: 'Default CPU per kernel pod (e.g. "2", "3", "2500m"). Server enforces a minimum of 2 cores and a maximum of 4. Omit to leave the kernel''s existing default unchanged.'
+    required: false
+  memory:
+    description: 'Default memory request per kernel pod (e.g. "4Gi", "8Gi"). Server enforces a minimum of 4 GiB and a maximum of 8 GiB. Omit to leave the kernel''s existing default unchanged.'
+    required: false
+  memory-limit:
+    description: 'Default memory limit per kernel pod (must be >= memory). Same units and ceiling as memory. Omit to leave the kernel''s existing default unchanged.'
+    required: false
+
+outputs:
+  kernel-name:
+    description: 'The deployed kernel name'
+    value: ${{ steps.deploy-kernel.outputs.kernel-name }}
+  image-uri:
+    description: 'The Artifact Registry image URI'
+    value: ${{ steps.deploy-kernel.outputs.image-uri }}
+  status:
+    description: 'Deployment status (active, failed, timeout)'
+    value: ${{ steps.deploy-kernel.outputs.status }}
+  build-id:
+    description: 'Cloud Build ID'
+    value: ${{ steps.deploy-kernel.outputs.build-id }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install -q -r "${{ github.action_path }}/requirements.txt"
+
+    - name: Validate Dockerfile
+      shell: bash
+      run: |
+        python ${{ github.action_path }}/src/scripts/validate_dockerfile.py \
+          "${{ inputs.dockerfile-path }}" \
+          "${{ inputs.context-dir }}"
+
+    - name: Deploy kernel
+      id: deploy-kernel
+      shell: bash
+      env:
+        QBRAID_API_KEY: ${{ inputs.api-key }}
+        QBRAID_DEPLOY_TIMEOUT_SECONDS: ${{ inputs.timeout-seconds }}
+      run: |
+        echo "::add-mask::$QBRAID_API_KEY"
+        python ${{ github.action_path }}/src/scripts/deploy_kernel.py \
+          --dockerfile-path "${{ inputs.dockerfile-path }}" \
+          --kernel-name "${{ inputs.kernel-name }}" \
+          --language "${{ inputs.language }}" \
+          --display-name "${{ inputs.display-name }}" \
+          --context-dir "${{ inputs.context-dir }}" \
+          --api-base-url "${{ inputs.api-base-url }}" \
+          --timeout-seconds "${{ inputs.timeout-seconds }}" \
+          --cpu "${{ inputs.cpu }}" \
+          --memory "${{ inputs.memory }}" \
+          --memory-limit "${{ inputs.memory-limit }}"

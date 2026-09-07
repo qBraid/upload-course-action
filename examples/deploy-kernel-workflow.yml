@@ -1,0 +1,60 @@
+name: Deploy Custom Kernel to qBraid
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernel-name:
+        description: 'Kernel name (lowercase, alphanumeric + underscore, 3-64 chars)'
+        required: true
+        type: string
+      language:
+        description: 'Programming language'
+        required: true
+        type: choice
+        options:
+          - python
+          - cpp
+          - julia
+          - r
+          - rust
+          - go
+          - javascript
+      display-name:
+        description: 'Human-readable display name for the kernel'
+        required: false
+        type: string
+      api-base-url:
+        description: 'qBraid API base URL (leave blank for default)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-kernel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy kernel to qBraid
+        id: deploy-kernel
+        uses: qBraid/upload-course-action/deploy-kernel@kernel-deployment-v0.0-beta.0.1  # ✅ repo/subdir@tag
+        with:
+          api-key:          ${{ secrets.QBRAID_API_KEY }}
+          kernel-name:      ${{ github.event.inputs.kernel-name || 'my_custom_kernel' }}
+          language:         ${{ github.event.inputs.language || 'python' }}
+          display-name:     ${{ github.event.inputs.display-name || 'My Custom Kernel' }}
+          dockerfile-path:  'Dockerfile.kernel'
+          context-dir:      './kernel-spec'
+          api-base-url:     ${{ github.event.inputs.api-base-url || 'https://api-v2.qbraid.com/api/v1' }}
+
+      - name: Show deployment results
+        if: success()
+        run: |
+          echo "✅ Kernel deployed successfully!"
+          echo "Kernel Name:  ${{ steps.deploy-kernel.outputs.kernel-name }}"
+          echo "Image URI:    ${{ steps.deploy-kernel.outputs.image-uri }}"
+          echo "Build ID:     ${{ steps.deploy-kernel.outputs.build-id }}"
+          echo "Status:       ${{ steps.deploy-kernel.outputs.status }}"

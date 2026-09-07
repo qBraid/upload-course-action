@@ -134,8 +134,8 @@ class TestNastyInputs:
                 "chapterFileName": "missing.ipynb.json",
                 "baseFilePath": "nonexistent.ipynb",
                 "chapterNumber": 1,
-                "kernelName": "python3",
-                "kernelId": "python3",
+                "kernelName": "qbraid_python",
+                "kernelId": "qbraid_python",
                 "sections": [],
             }
         ]
@@ -186,8 +186,8 @@ class TestNastyInputs:
                 "chapterFileName": "traversal.ipynb.json",
                 "baseFilePath": "../../../etc/passwd",
                 "chapterNumber": 1,
-                "kernelName": "python3",
-                "kernelId": "python3",
+                "kernelName": "qbraid_python",
+                "kernelId": "qbraid_python",
                 "sections": [],
             }
         ]

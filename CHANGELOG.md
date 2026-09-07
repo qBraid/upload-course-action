@@ -30,6 +30,11 @@ uses: qBraid/upload-course-action@v0.1.0-beta
 - Fixed JSend response parsing in deploy and polling scripts to support `{status, data}` envelope format
 - Added guard in `action.yml` to fail early with a clear error when `course_custom_id` is empty after create/update step
 - Replaced silent `pass` with warning logs when API response parsing fails
+- Failed kernel deployment polling immediately on terminal API errors instead of retrying until timeout
+- Made the deploy-kernel wrapper reuse the shared Dockerfile validator implementation
+
+### Changed
+- Treat active pre-existing kernels as a successful deploy outcome for rerun-safe custom kernel workflows
 
 ### Added
 - Unit tests for JSend response handling in course creation and polling
