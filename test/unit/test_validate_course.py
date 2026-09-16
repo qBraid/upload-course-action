@@ -2,11 +2,13 @@ import json
 from unittest import mock
 
 import pytest
+from pydantic import ValidationError
 from validate_course import (
     Course,
     CourseValidator,
     _fetch_available_kernels,
     _format_missing_kernel_error,
+    course_payload,
 )
 
 
@@ -171,6 +173,41 @@ class TestCourseValidator:
         assert "Catalog contains 20 kernels" in message
         assert message.count("kernel_") <= 10
         assert "..." in message
+
+    def _duration_course_data(self, **extra):
+        data = {
+            "courseName": "Test Course",
+            "courseDescription": "Desc",
+            "visibility": "public",
+            "imageLink": {"darkLogo": "d.png", "lightLogo": "l.png"},
+            "tags": ["tag"],
+            "content": [],
+            "deployedTo": ["qbraid.com"],
+        }
+        data.update(extra)
+        return data
+
+    def test_duration_weeks_is_forwarded_in_payload(self):
+        """A declared durationWeeks must survive into the deploy payload."""
+        course = Course(**self._duration_course_data(durationWeeks=2))
+
+        payload = course_payload(course)
+
+        assert payload["durationWeeks"] == 2
+
+    def test_absent_duration_weeks_stays_absent_in_payload(self):
+        """No durationWeeks in course.json -> no key in the payload (the API
+        accepts a missing field but rejects an explicit null)."""
+        course = Course(**self._duration_course_data())
+
+        payload = course_payload(course)
+
+        assert "durationWeeks" not in payload
+
+    @pytest.mark.parametrize("bad_value", [0, -3, 53, 2.5, "two"])
+    def test_out_of_range_duration_weeks_fails_validation(self, bad_value):
+        with pytest.raises(ValidationError):
+            Course(**self._duration_course_data(durationWeeks=bad_value))
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("json.load")

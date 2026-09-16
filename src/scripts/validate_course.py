@@ -112,6 +112,10 @@ class Course(BaseModel):
     tags: List[str]
     content: List[Chapter]
     deployedTo: List[str] = Field(..., min_length=1)
+    # Author-declared course length in weeks, forwarded to the qBraid API,
+    # which enforces the same 1-52 integer range. Optional: courses without
+    # it keep the platform's chapter-count estimate.
+    durationWeeks: Optional[int] = Field(None, ge=1, le=52)
 
     @field_validator("deployedTo")
     @classmethod
@@ -151,6 +155,19 @@ class Course(BaseModel):
                         )
                     )
         return chapters
+
+
+def course_payload(course: Course) -> dict:
+    """The validated course as the deploy payload dict.
+
+    An optional field left out of course.json must stay absent in the
+    payload, not become null: the qBraid API accepts a missing
+    durationWeeks but rejects an explicit null.
+    """
+    payload = course.model_dump(mode="json")
+    if payload.get("durationWeeks") is None:
+        payload.pop("durationWeeks", None)
+    return payload
 
 
 class CourseValidator:
@@ -195,7 +212,7 @@ class CourseValidator:
         # Save course data for next steps
         try:
             with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
-                json.dump(course.model_dump(mode="json"), f)
+                json.dump(course_payload(course), f)
         except IOError as e:
             logger.error(f"Failed to write {Config.COURSE_DATA_FILE_NAME}: {e}")
             sys.exit(1)
