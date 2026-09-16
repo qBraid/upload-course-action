@@ -38,6 +38,7 @@ uses: qBraid/upload-course-action@v0.1.0-beta
 
 ### Added
 - Unit tests for JSend response handling in course creation and polling
+- Forward the optional `durationWeeks` field (author-declared course length in weeks, integer 1-52) from `course.json` to the deploy payload; previously the validate step's model round-trip silently dropped it. An out-of-range value now fails validation with a clear message, and an absent field serializes as `null`, which the qBraid API treats as not declared
 - Unit tests for shared deploy payload/response handling in `deploy_common.py`
 - Action inputs to configure polling limits (`max-poll-attempts`, `poll-interval-seconds`, `max-consecutive-errors`)
 - Comprehensive pytest testing infrastructure with unit and E2E tests

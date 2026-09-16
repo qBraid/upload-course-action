@@ -112,6 +112,10 @@ class Course(BaseModel):
     tags: List[str]
     content: List[Chapter]
     deployedTo: List[str] = Field(..., min_length=1)
+    # Author-declared course length in weeks, forwarded to the qBraid API,
+    # which enforces the same 1-52 integer range. Optional: courses without
+    # it keep the platform's chapter-count estimate.
+    durationWeeks: Optional[int] = Field(None, ge=1, le=52)
 
     @field_validator("deployedTo")
     @classmethod
@@ -192,7 +196,9 @@ class CourseValidator:
 
         logger.info("✅ course.json structure and file sizes are valid")
 
-        # Save course data for next steps
+        # Save course data for next steps. A course.json without
+        # durationWeeks serializes it as null; the qBraid API treats null
+        # the same as an absent field.
         try:
             with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
                 json.dump(course.model_dump(mode="json"), f)
