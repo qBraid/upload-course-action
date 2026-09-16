@@ -8,7 +8,6 @@ from validate_course import (
     CourseValidator,
     _fetch_available_kernels,
     _format_missing_kernel_error,
-    course_payload,
 )
 
 
@@ -191,18 +190,18 @@ class TestCourseValidator:
         """A declared durationWeeks must survive into the deploy payload."""
         course = Course(**self._duration_course_data(durationWeeks=2))
 
-        payload = course_payload(course)
+        payload = course.model_dump(mode="json")
 
         assert payload["durationWeeks"] == 2
 
-    def test_absent_duration_weeks_stays_absent_in_payload(self):
-        """No durationWeeks in course.json -> no key in the payload (the API
-        accepts a missing field but rejects an explicit null)."""
+    def test_absent_duration_weeks_serializes_as_null(self):
+        """No durationWeeks in course.json -> null in the payload, which the
+        qBraid API treats the same as an absent field."""
         course = Course(**self._duration_course_data())
 
-        payload = course_payload(course)
+        payload = course.model_dump(mode="json")
 
-        assert "durationWeeks" not in payload
+        assert payload["durationWeeks"] is None
 
     @pytest.mark.parametrize("bad_value", [0, -3, 53, 2.5, "two"])
     def test_out_of_range_duration_weeks_fails_validation(self, bad_value):

@@ -157,19 +157,6 @@ class Course(BaseModel):
         return chapters
 
 
-def course_payload(course: Course) -> dict:
-    """The validated course as the deploy payload dict.
-
-    An optional field left out of course.json must stay absent in the
-    payload, not become null: the qBraid API accepts a missing
-    durationWeeks but rejects an explicit null.
-    """
-    payload = course.model_dump(mode="json")
-    if payload.get("durationWeeks") is None:
-        payload.pop("durationWeeks", None)
-    return payload
-
-
 class CourseValidator:
     """Validates the course.json structure and file sizes."""
 
@@ -209,10 +196,12 @@ class CourseValidator:
 
         logger.info("✅ course.json structure and file sizes are valid")
 
-        # Save course data for next steps
+        # Save course data for next steps. A course.json without
+        # durationWeeks serializes it as null; the qBraid API treats null
+        # the same as an absent field.
         try:
             with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
-                json.dump(course_payload(course), f)
+                json.dump(course.model_dump(mode="json"), f)
         except IOError as e:
             logger.error(f"Failed to write {Config.COURSE_DATA_FILE_NAME}: {e}")
             sys.exit(1)
