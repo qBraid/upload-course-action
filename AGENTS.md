@@ -25,7 +25,6 @@ The Deploy Course Action is a composite GitHub Action that automates the deploym
 |-------|------|---------|-------------|
 | `course-json-path` | string | `course.json` | Path to course configuration file |
 | `article-type` | string | `course` | Type of article (`course` or `blog`) |
-| `force-duplicate-questions` | string | `false` | Force upload duplicate questions (`true` or `false`) |
 | `draft` | string | `false` | Create draft course (`true` or `false`) |
 
 ### Outputs

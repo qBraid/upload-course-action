@@ -46,9 +46,6 @@ jobs:
 
           # Optional: Type of article to create (course or blog, defaults to 'course')
           article-type: 'course'
-          
-          # Optional: Whether to force upload duplicate questions (defaults to 'false')
-          force-duplicate-questions: 'false'
 
           # Optional: Operation mode ('create' or 'update', defaults to 'create')
           # Can be dynamic based on workflow inputs or variables
