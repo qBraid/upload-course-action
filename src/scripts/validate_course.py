@@ -114,8 +114,9 @@ class Course(BaseModel):
     deployedTo: List[str] = Field(..., min_length=1)
     # Author-declared course length in weeks, forwarded to the qBraid API,
     # which enforces the same 1-52 integer range. Optional: courses without
-    # it keep the platform's chapter-count estimate.
-    durationWeeks: Optional[int] = Field(None, ge=1, le=52)
+    # it keep the platform's chapter-count estimate. strict, because pydantic
+    # would otherwise coerce "3" to 3 and forward a value the API rejects.
+    durationWeeks: Optional[int] = Field(None, ge=1, le=52, strict=True)
 
     @field_validator("deployedTo")
     @classmethod

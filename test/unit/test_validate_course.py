@@ -203,7 +203,7 @@ class TestCourseValidator:
 
         assert payload["durationWeeks"] is None
 
-    @pytest.mark.parametrize("bad_value", [0, -3, 53, 2.5, "two"])
+    @pytest.mark.parametrize("bad_value", [0, -3, 53, 2.5, "two", "3", True])
     def test_out_of_range_duration_weeks_fails_validation(self, bad_value):
         with pytest.raises(ValidationError):
             Course(**self._duration_course_data(durationWeeks=bad_value))
