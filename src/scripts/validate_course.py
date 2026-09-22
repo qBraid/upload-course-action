@@ -5,7 +5,7 @@ import os
 import sys
 import urllib.request
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Any, Dict, List, Literal, Optional, Set
 
 from common import Config, setup_logging
 from pydantic import BaseModel, Field, ValidationError, field_validator
@@ -48,6 +48,28 @@ class ImageLink(BaseModel):
 
     darkLogo: str
     lightLogo: str
+
+
+class CertificateCriteria(BaseModel):
+    """When a learner earns the certificate: a completion percentage or a
+    points total, both of which the qBraid API accepts as `value >= 0`."""
+
+    type: Literal["completion", "points"]
+    value: float = Field(..., ge=0)
+
+
+class CertificateSettings(BaseModel):
+    """Per-course certificate settings, forwarded verbatim to the qBraid API.
+
+    `templateId` picks the certificate design. The API's enum is the source
+    of truth; this list mirrors it so a typo fails here with a field-level
+    message instead of a 400 at deploy time. Omitted, the API keeps the
+    template already stored for the course, or derives one from the deploy
+    domain for a new course."""
+
+    enabled: bool = Field(..., strict=True)
+    criteria: Optional[CertificateCriteria] = None
+    templateId: Optional[Literal["qbraid", "quera", "qct"]] = None
 
 
 class Section(BaseModel):
@@ -117,6 +139,26 @@ class Course(BaseModel):
     # it keep the platform's chapter-count estimate. strict, because pydantic
     # would otherwise coerce "3" to 3 and forward a value the API rejects.
     durationWeeks: Optional[int] = Field(None, ge=1, le=52, strict=True)
+    # Optional certificate settings, including the template. The API rejects
+    # an explicit null here, so `to_payload` drops the key when absent.
+    certificateSettings: Optional[CertificateSettings] = None
+
+    def to_payload(self) -> Dict[str, Any]:
+        """The deploy payload the API receives.
+
+        `model_dump` alone would serialize an absent `certificateSettings` (and
+        an absent `criteria` inside it) as null, which the API's validator
+        refuses; those keys are dropped instead. `durationWeeks` stays as
+        null on purpose: the API treats it as not declared.
+        """
+        payload = self.model_dump(mode="json")
+        if self.certificateSettings is None:
+            payload.pop("certificateSettings")
+        else:
+            payload["certificateSettings"] = self.certificateSettings.model_dump(
+                mode="json", exclude_none=True
+            )
+        return payload
 
     @field_validator("deployedTo")
     @classmethod
@@ -197,12 +239,10 @@ class CourseValidator:
 
         logger.info("✅ course.json structure and file sizes are valid")
 
-        # Save course data for next steps. A course.json without
-        # durationWeeks serializes it as null; the qBraid API treats null
-        # the same as an absent field.
+        # Save course data for next steps.
         try:
             with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
-                json.dump(course.model_dump(mode="json"), f)
+                json.dump(course.to_payload(), f)
         except IOError as e:
             logger.error(f"Failed to write {Config.COURSE_DATA_FILE_NAME}: {e}")
             sys.exit(1)
