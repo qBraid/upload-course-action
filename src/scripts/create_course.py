@@ -2,14 +2,17 @@
 
 import argparse
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from common import ActionError, ArticleType, Config, ValidationError, setup_logging
+from common import ActionError, ArticleType, ValidationError, setup_logging
 from deploy_common import (
     CourseDeployer,
+    build_certificate_settings,
     validate_api_key,
     validate_article_type,
     validate_boolean,
+    validate_certificate_criteria_type,
+    validate_certificate_criteria_value,
     validate_commit_sha,
     validate_repo_token,
     validate_repo_url,
@@ -29,23 +32,31 @@ class CourseCreator(CourseDeployer):
         commit_sha: str,
         article_type: str = "course",
         force_duplicate_questions: bool = True,
+        certificate_settings: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(
-            api_key, repo_read_token, repo_url, commit_sha, force_duplicate_questions
+            api_key,
+            repo_read_token,
+            repo_url,
+            commit_sha,
+            article_type,
+            force_duplicate_questions,
+            certificate_settings,
         )
         try:
-            self.article_type = ArticleType(article_type)
+            self._article_type_enum = ArticleType(article_type)
         except ValueError:
             logger.warning(
                 f"Invalid article type '{article_type}'. Defaulting to 'course'."
             )
-            self.article_type = ArticleType.COURSE
+            self._article_type_enum = ArticleType.COURSE
+            self.article_type = "course"
 
     def run(self) -> None:
         """Creates a course on qBraid using the API."""
-        logger.info(f"Creating article of type: {self.article_type.value}")
+        logger.info(f"Creating article of type: {self._article_type_enum.value}")
 
-        url = f"/learn/articles/{self.article_type.value}/ingest"
+        url = f"/learn/articles/{self._article_type_enum.value}/ingest"
         headers = {"X-API-Key": self.api_key, "Content-Type": "application/json"}
         payload = self.get_common_payload()
 
@@ -67,6 +78,7 @@ def create_course(
     commit_sha: str,
     article_type: str = "course",
     force_duplicate_questions: bool = True,
+    certificate_settings: Optional[Dict[str, Any]] = None,
 ):
     """Wrapper for execution."""
     creator = CourseCreator(
@@ -76,6 +88,7 @@ def create_course(
         commit_sha,
         article_type,
         force_duplicate_questions,
+        certificate_settings,
     )
     try:
         creator.run()
@@ -95,9 +108,29 @@ if __name__ == "__main__":
     parser.add_argument(
         "--force-duplicate-questions", required=True, type=validate_boolean
     )
+    parser.add_argument(
+        "--certificate-enabled", required=False, type=validate_boolean, default=False
+    )
+    parser.add_argument(
+        "--certificate-criteria-type",
+        required=False,
+        type=validate_certificate_criteria_type,
+        default="completion",
+    )
+    parser.add_argument(
+        "--certificate-criteria-value",
+        required=False,
+        type=validate_certificate_criteria_value,
+        default=None,
+    )
 
     try:
         args = parser.parse_args()
+        certificate_settings = build_certificate_settings(
+            args.certificate_enabled,
+            args.certificate_criteria_type,
+            args.certificate_criteria_value,
+        )
         create_course(
             args.api_key,
             args.repo_read_token,
@@ -105,6 +138,7 @@ if __name__ == "__main__":
             args.commit_sha,
             args.article_type,
             args.force_duplicate_questions,
+            certificate_settings,
         )
     except (ValidationError, argparse.ArgumentError) as e:
         logger.error(f"Validation error: {e}")

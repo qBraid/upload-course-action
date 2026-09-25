@@ -58,6 +58,9 @@ jobs:
 | `course-json-path` | Path to `course.json` file | No | `course.json` |
 | `article-type` | Type of article to create (`course` or `blog`) | No | `course` |
 | `force-duplicate-questions` | Whether to force upload duplicate questions (`true` or `false`) | No | `false` |
+| `certificate-enabled` | Enable certificates for this course (`true` or `false`) | No | `false` |
+| `certificate-criteria-type` | Certificate criteria type: `completion` or `points` | No | `completion` |
+| `certificate-criteria-value` | Criteria value (0-100 for completion, any number for points) | No | `100` |
 | `max-poll-attempts` | Maximum polling attempts before timing out | No | `20` |
 | `poll-interval-seconds` | Seconds to wait between polling attempts | No | `15` |
 | `max-consecutive-errors` | Maximum consecutive polling errors before failing | No | `5` |
@@ -79,6 +82,53 @@ jobs:
 | `course_name` | Name of the deployed course |
 | `course-custom-id` | Custom ID of the deployed course |
 | `qbook_url` | URL of the deployed course |
+
+## Certificate Settings
+
+Configure certificate issuance for your course using the certificate input fields. If `certificate-enabled` is not set or is `false`, certificates are disabled.
+
+**Note:** Certificate settings only apply when `article-type` is `course`. They are ignored for `blog` articles.
+
+### Inputs
+
+| Input | Description | Default |
+| :--- | :--- | :--- |
+| `certificate-enabled` | Enable certificates for the course | `false` |
+| `certificate-criteria-type` | `completion` (percentage-based) or `points` (score-based) | `completion` |
+| `certificate-criteria-value` | Required value (0-100 for completion, any number for points) | `100` |
+
+### Examples
+
+**Completion-based certificate (require 80% completion):**
+```yaml
+- uses: qBraid/upload-course-action@v0.1.0-beta
+  with:
+    api-key: ${{ secrets.QBRAID_API_KEY }}
+    repo-read-token: ${{ secrets.GITHUB_TOKEN }}
+    certificate-enabled: 'true'
+    certificate-criteria-type: 'completion'
+    certificate-criteria-value: '80'
+```
+
+**Points-based certificate (require 500 points):**
+```yaml
+- uses: qBraid/upload-course-action@v0.1.0-beta
+  with:
+    api-key: ${{ secrets.QBRAID_API_KEY }}
+    repo-read-token: ${{ secrets.GITHUB_TOKEN }}
+    certificate-enabled: 'true'
+    certificate-criteria-type: 'points'
+    certificate-criteria-value: '500'
+```
+
+**Certificates disabled (default):**
+```yaml
+- uses: qBraid/upload-course-action@v0.1.0-beta
+  with:
+    api-key: ${{ secrets.QBRAID_API_KEY }}
+    repo-read-token: ${{ secrets.GITHUB_TOKEN }}
+    # certificate-enabled defaults to 'false'
+```
 
 ## How it Works
 
