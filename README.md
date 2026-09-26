@@ -80,6 +80,46 @@ jobs:
 | `course-custom-id` | Custom ID of the deployed course |
 | `qbook_url` | URL of the deployed course |
 
+## Certificate Settings
+
+A `course.json` can turn on certificates and pick their design with an optional `certificateSettings` object:
+
+```json
+{
+  "courseName": "Intro to Quantum Computing",
+  "certificateSettings": {
+    "enabled": true,
+    "criteria": { "type": "completion", "value": 80 },
+    "templateId": "qct"
+  }
+}
+```
+
+| Field | Required | Values |
+| :--- | :--- | :--- |
+| `enabled` | **Yes** | `true` or `false` |
+| `criteria.type` | No | `completion` (percent of the course completed) or `points` (points earned) |
+| `criteria.value` | No | A number `>= 0`: a percentage for `completion`, a point total for `points` |
+| `templateId` | No | One of the template ids below |
+
+### Certificate templates
+
+| `templateId` | Design |
+| :--- | :--- |
+| `qbraid` | The standard qBraid certificate of completion |
+| `quera` | QuEra-branded certificate on a dark background |
+| `qct` | Quantum Ready Thailand Certification Program, with partner logos |
+
+Ids are lowercase. Any other value fails validation before the deploy starts.
+
+### What happens when a field is omitted
+
+- **No `certificateSettings` object**: nothing is sent, and the course keeps whatever certificate settings it already has.
+- **No `templateId`**: an existing course keeps its stored design. A new course gets `quera` if it deploys to `quera.com`, otherwise `qbraid`.
+- **No `criteria`**: the course's criteria reset to 100% completion, even if an admin set different criteria in qBook. If you include `certificateSettings`, include `criteria` too.
+
+Changing the design only affects certificates that have not been delivered yet. Certificates already sent keep their design.
+
 ## How it Works
 
 This action validates your course structure and creates it via the qBraid API:
