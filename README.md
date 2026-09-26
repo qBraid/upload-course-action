@@ -104,13 +104,15 @@ A `course.json` can turn on certificates and pick their design with an optional 
 
 ### Certificate templates
 
-| `templateId` | Design |
-| :--- | :--- |
-| `qbraid` | The standard qBraid certificate of completion |
-| `quera` | QuEra-branded certificate on a dark background |
-| `qct` | Quantum Ready Thailand Certification Program, with partner logos |
+| `templateId` | Design | Available to |
+| :--- | :--- | :--- |
+| `qbraid` | The standard qBraid certificate of completion | Every organization |
+| `quera` | QuEra-branded certificate on a dark background | QuEra organizations, and any course deployed to `quera.com` |
+| `qct` | Quantum Ready Thailand Certification Program, with partner logos | Quantum Club Thailand |
 
 Ids are lowercase. Any other value fails validation before the deploy starts.
+
+Partner designs are reserved for their partner's organization. Naming one your course's organization cannot use fails the deploy with `403 CERTIFICATE_TEMPLATE_NOT_ALLOWED`, and the course is left unchanged. A course can always keep the design it already has. To use a partner design for another organization, contact qBraid.
 
 ### What happens when a field is omitted
 
