@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set
 
 from common import Config, setup_logging
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 logger = setup_logging(__name__)
 
@@ -52,10 +52,16 @@ class ImageLink(BaseModel):
 
 class CertificateCriteria(BaseModel):
     """When a learner earns the certificate: a completion percentage or a
-    points total, both of which the qBraid API accepts as `value >= 0`."""
+    points total, both of which the qBraid API accepts as `value >= 0`.
+
+    Unknown keys are refused so a misspelled key fails validation instead of
+    being dropped. `value` is strict: a string or a boolean is refused
+    rather than coerced, and so are infinity and NaN."""
+
+    model_config = ConfigDict(extra="forbid")
 
     type: Literal["completion", "points"]
-    value: float = Field(..., ge=0)
+    value: float = Field(..., ge=0, strict=True, allow_inf_nan=False)
 
 
 class CertificateSettings(BaseModel):
@@ -64,8 +70,15 @@ class CertificateSettings(BaseModel):
     `templateId` picks the certificate design. The API's enum is the source
     of truth; this list mirrors it so a typo fails here with a field-level
     message instead of a 400 at deploy time. Omitted, the API keeps the
-    template already stored for the course, or derives one from the deploy
-    domain for a new course."""
+    template already stored for the course. A new course gets `quera` when
+    it deploys to quera.com and its organization holds the quera grant,
+    otherwise `qbraid`.
+
+    Unknown keys are refused: `templateID` would otherwise be ignored and
+    the course deployed with the default design. The validation error names
+    the unknown key."""
+
+    model_config = ConfigDict(extra="forbid")
 
     enabled: bool = Field(..., strict=True)
     criteria: Optional[CertificateCriteria] = None

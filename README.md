@@ -107,17 +107,17 @@ A `course.json` can turn on certificates and pick their design with an optional 
 | `templateId` | Design | Available to |
 | :--- | :--- | :--- |
 | `qbraid` | The standard qBraid certificate of completion | Every organization |
-| `quera` | QuEra-branded certificate on a dark background | QuEra organizations, and any course deployed to `quera.com` |
-| `qct` | Quantum Ready Thailand Certification Program, with partner logos | Quantum Club Thailand |
+| `quera` | QuEra-branded certificate on a dark background | Organizations that qBraid has granted the `quera` design |
+| `qct` | Quantum Ready Thailand Certification Program, with partner logos | Organizations that qBraid has granted the `qct` design |
 
-Ids are lowercase. Any other value fails validation before the deploy starts.
+Ids are lowercase. Any other value fails validation before the deploy starts, and so does an unknown key inside `certificateSettings` or `criteria` (for example `templateID`); the error names the key. `criteria.value` must be a JSON number: `"80"` or `true` is refused, not converted.
 
-Partner designs are reserved for their partner's organization. Naming one your course's organization cannot use fails the deploy with `403 CERTIFICATE_TEMPLATE_NOT_ALLOWED`, and the course is left unchanged. A course can always keep the design it already has. To use a partner design for another organization, contact qBraid.
+Partner designs (`quera`, `qct`) need a grant on your course's organization, which qBraid staff set. The deploy domain grants nothing: deploying to `quera.com` does not by itself allow `quera`. Naming a partner design your organization has not been granted fails the deploy: the qBraid API answers `403 CERTIFICATE_TEMPLATE_NOT_ALLOWED`, the action fails and shows that response, and the course is left unchanged. A course can always keep the design it already has. To get a partner design granted to your organization, contact qBraid.
 
 ### What happens when a field is omitted
 
 - **No `certificateSettings` object**: nothing is sent, and the course keeps whatever certificate settings it already has.
-- **No `templateId`**: an existing course keeps its stored design. A new course gets `quera` if it deploys to `quera.com`, otherwise `qbraid`.
+- **No `templateId`**: an existing course keeps its stored design. A new course gets `quera` only if it deploys to `quera.com` and its organization holds the `quera` grant. Every other new course gets `qbraid`.
 - **No `criteria`**: the course's criteria reset to 100% completion, even if an admin set different criteria in qBook. If you include `certificateSettings`, include `criteria` too.
 
 Changing the design only affects certificates that have not been delivered yet. Certificates already sent keep their design.
