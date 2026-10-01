@@ -279,9 +279,9 @@ class TestCourseValidator:
             (
                 {
                     "enabled": True,
-                    "criteria": {"type": "completion", "value": 80, "valu": 90},
+                    "criteria": {"type": "completion", "value": 80, "threshold": 90},
                 },
-                ("certificateSettings", "criteria", "valu"),
+                ("certificateSettings", "criteria", "threshold"),
             ),
         ],
     )
