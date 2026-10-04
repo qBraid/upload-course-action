@@ -38,9 +38,6 @@ jobs:
           
           # Optional: Type of article to create (course or blog, defaults to 'course')
           article-type: 'course'
-          
-          # Optional: Whether to force upload duplicate questions (defaults to 'false')
-          force-duplicate-questions: 'false'
 
       - name: Show Results
         if: success()

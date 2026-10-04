@@ -46,21 +46,6 @@ def validate_article_type(article_type: str) -> str:
     return article_type
 
 
-def validate_boolean(value: str) -> bool:
-    """Validate and convert string to boolean."""
-    if not value:
-        raise ValidationError("Boolean value cannot be empty")
-    value_lower = value.strip().lower()
-    if value_lower in ("true", "1", "yes", "on"):
-        return True
-    elif value_lower in ("false", "0", "no", "off"):
-        return False
-    else:
-        raise ValidationError(
-            f"Invalid boolean value '{value}'. Must be one of: true, false, 1, 0, yes, no, on, off"
-        )
-
-
 def validate_repo_token(token: str) -> str:
     """Validate repository read token is not empty."""
     if not token or not token.strip():
@@ -114,13 +99,11 @@ class CourseDeployer:
         repo_read_token: str,
         repo_url: str,
         commit_sha: str,
-        force_duplicate_questions: bool = True,
     ):
         self.api_key = api_key
         self.repo_read_token = repo_read_token
         self.repo_url = repo_url
         self.commit_sha = commit_sha
-        self.force_duplicate_questions = force_duplicate_questions
         self.session = QbraidSessionV1(api_key=api_key)
         self.session.base_url = Config.API_BASE_URL
 
@@ -144,7 +127,7 @@ class CourseDeployer:
         run_attempt = os.getenv("GITHUB_RUN_ATTEMPT")
         payload = {
             "data": course_data,
-            "forceDuplicateQuestions": self.force_duplicate_questions,
+            "forceDuplicateQuestions": False,
             "repoReadToken": self.repo_read_token,
             "repoUrl": self.repo_url,
             "commitSha": self.commit_sha,

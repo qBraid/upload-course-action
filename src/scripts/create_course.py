@@ -9,7 +9,6 @@ from deploy_common import (
     CourseDeployer,
     validate_api_key,
     validate_article_type,
-    validate_boolean,
     validate_commit_sha,
     validate_repo_token,
     validate_repo_url,
@@ -28,11 +27,8 @@ class CourseCreator(CourseDeployer):
         repo_url: str,
         commit_sha: str,
         article_type: str = "course",
-        force_duplicate_questions: bool = True,
     ):
-        super().__init__(
-            api_key, repo_read_token, repo_url, commit_sha, force_duplicate_questions
-        )
+        super().__init__(api_key, repo_read_token, repo_url, commit_sha)
         try:
             self.article_type = ArticleType(article_type)
         except ValueError:
@@ -66,7 +62,6 @@ def create_course(
     repo_url: str,
     commit_sha: str,
     article_type: str = "course",
-    force_duplicate_questions: bool = True,
 ):
     """Wrapper for execution."""
     creator = CourseCreator(
@@ -75,7 +70,6 @@ def create_course(
         repo_url,
         commit_sha,
         article_type,
-        force_duplicate_questions,
     )
     try:
         creator.run()
@@ -92,9 +86,6 @@ if __name__ == "__main__":
     parser.add_argument("--repo-url", required=True, type=validate_repo_url)
     parser.add_argument("--commit-sha", required=True, type=validate_commit_sha)
     parser.add_argument("--article-type", required=True, type=validate_article_type)
-    parser.add_argument(
-        "--force-duplicate-questions", required=True, type=validate_boolean
-    )
 
     try:
         args = parser.parse_args()
@@ -104,7 +95,6 @@ if __name__ == "__main__":
             args.repo_url,
             args.commit_sha,
             args.article_type,
-            args.force_duplicate_questions,
         )
     except (ValidationError, argparse.ArgumentError) as e:
         logger.error(f"Validation error: {e}")
