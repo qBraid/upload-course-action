@@ -27,6 +27,8 @@ uses: qBraid/upload-course-action@v0.1.0-beta
 ## [Unreleased]
 
 ### Fixed
+- Report invalid mapping JSON arrays and scalars as CLI validation errors without tracebacks or file changes.
+- Preserve `chapterQuestions` and `sectionQuestions` in deployment payloads so copied question references can trigger an existing course rebuild.
 - Fixed JSend response parsing in deploy and polling scripts to support `{status, data}` envelope format
 - Added guard in `action.yml` to fail early with a clear error when `course_custom_id` is empty after create/update step
 - Replaced silent `pass` with warning logs when API response parsing fails
@@ -37,6 +39,7 @@ uses: qBraid/upload-course-action@v0.1.0-beta
 - Treat active pre-existing kernels as a successful deploy outcome for rerun-safe custom kernel workflows
 
 ### Added
+- Add `prepare_question_copy.py` to apply a saved MCP copy mapping to destination notebooks and derive matching course question references, with preview, write, and check modes.
 - Unit tests for JSend response handling in course creation and polling
 - Forward the optional `durationWeeks` field (author-declared course length in weeks, integer 1-52) from `course.json` to the deploy payload; previously the validate step's model round-trip silently dropped it. An out-of-range or non-integer value (including a numeric string such as `"3"`) now fails validation with a clear message, and an absent field serializes as `null`, which the qBraid API treats as not declared
 - Unit tests for shared deploy payload/response handling in `deploy_common.py`

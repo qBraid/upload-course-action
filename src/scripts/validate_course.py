@@ -5,10 +5,10 @@ import os
 import sys
 import urllib.request
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from common import Config, setup_logging
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 logger = setup_logging(__name__)
 
@@ -50,6 +50,16 @@ class ImageLink(BaseModel):
     lightLogo: str
 
 
+class QuestionReferences(BaseModel):
+    """Question placements from notebooks, including occurrence suffixes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    MCQ: List[str] = Field(default_factory=list)
+    FRQ: List[str] = Field(default_factory=list)
+    CQ: Optional[List[str]] = None
+
+
 class Section(BaseModel):
     """Model for course sections."""
 
@@ -58,6 +68,7 @@ class Section(BaseModel):
     baseFilePath: Path
     kernelName: str
     kernelId: str
+    sectionQuestions: Optional[QuestionReferences] = None
 
     @field_validator("baseFilePath")
     @classmethod
@@ -84,6 +95,7 @@ class Chapter(BaseModel):
     chapterNumber: float
     kernelName: str
     kernelId: str
+    chapterQuestions: Optional[QuestionReferences] = None
     sections: Optional[List[Section]] = []
 
     @field_validator("baseFilePath")
@@ -117,6 +129,21 @@ class Course(BaseModel):
     # it keep the platform's chapter-count estimate. strict, because pydantic
     # would otherwise coerce "3" to 3 and forward a value the API rejects.
     durationWeeks: Optional[int] = Field(None, ge=1, le=52, strict=True)
+
+    def to_payload(self) -> Dict[str, Any]:
+        """Preserve supplied references without adding nulls to existing courses."""
+        payload = self.model_dump(mode="json")
+        for chapter in payload["content"]:
+            items = [(chapter, "chapterQuestions")]
+            items.extend(
+                (section, "sectionQuestions") for section in chapter["sections"] or []
+            )
+            for item, key in items:
+                if item[key] is None:
+                    item.pop(key)
+                elif item[key]["CQ"] is None:
+                    item[key].pop("CQ")
+        return payload
 
     @field_validator("deployedTo")
     @classmethod
@@ -202,7 +229,7 @@ class CourseValidator:
         # the same as an absent field.
         try:
             with open(Config.COURSE_DATA_FILE_NAME, "w") as f:
-                json.dump(course.model_dump(mode="json"), f)
+                json.dump(course.to_payload(), f)
         except IOError as e:
             logger.error(f"Failed to write {Config.COURSE_DATA_FILE_NAME}: {e}")
             sys.exit(1)
