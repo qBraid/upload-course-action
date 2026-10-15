@@ -237,3 +237,19 @@ def test_cli_check_fails_until_saved_mapping_is_applied(checkout):
         command + ["--check"], cwd=checkout, capture_output=True, text=True, check=True
     )
     assert json.loads(ready.stdout)["files"] == []
+
+
+@pytest.mark.parametrize("mapping", [[], None, 1, "questions", True])
+def test_cli_rejects_non_object_mapping_without_traceback_or_writes(checkout, mapping):
+    (checkout / "question-copy.json").write_text(json.dumps(mapping))
+    originals = {path.name: path.read_bytes() for path in checkout.iterdir()}
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--mapping", "question-copy.json", "--write"],
+        cwd=checkout,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2
+    assert result.stderr.startswith("Cannot prepare question copy:")
+    assert "Traceback" not in result.stderr
+    assert originals == {path.name: path.read_bytes() for path in checkout.iterdir()}

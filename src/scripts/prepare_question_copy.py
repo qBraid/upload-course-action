@@ -117,7 +117,8 @@ def prepare_copy(
     course_path = repository_path(root, course_json)
     mapping_path = repository_path(root, mapping_file)
     saved = json.loads(mapping_path.read_text(encoding="utf-8"))
-    result = CopyResult.model_validate(saved.get("data", saved))
+    payload = saved.get("data", saved) if isinstance(saved, dict) else saved
+    result = CopyResult.model_validate(payload)
     original_course = json.loads(course_path.read_text(encoding="utf-8"))
     course = json.loads(json.dumps(original_course))
     pending = {}

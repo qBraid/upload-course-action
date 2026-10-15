@@ -27,6 +27,7 @@ uses: qBraid/upload-course-action@v0.1.0-beta
 ## [Unreleased]
 
 ### Fixed
+- Report invalid mapping JSON arrays and scalars as CLI validation errors without tracebacks or file changes.
 - Preserve `chapterQuestions` and `sectionQuestions` in deployment payloads so copied question references can trigger an existing course rebuild.
 - Fixed JSend response parsing in deploy and polling scripts to support `{status, data}` envelope format
 - Added guard in `action.yml` to fail early with a clear error when `course_custom_id` is empty after create/update step
