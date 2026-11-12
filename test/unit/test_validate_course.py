@@ -63,12 +63,12 @@ class TestCourseValidator:
         mock_stat.return_value.st_size = 100
 
         validator = CourseValidator("course.json")
-        validator.validate()
+        with mock.patch("json.dump", wraps=json.dump) as mock_dump:
+            validator.validate()
 
-        # The written payload is what the API receives. An absent
+        # The dumped payload is what the API receives. An absent
         # certificateSettings must be left out: the API refuses null.
-        written = "".join(c.args[0] for c in mock_file().write.call_args_list)
-        payload = json.loads(written)
+        payload = mock_dump.call_args.args[0]
         assert payload["courseName"] == "Test Course"
         assert "certificateSettings" not in payload
 
