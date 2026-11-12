@@ -50,6 +50,14 @@ class ImageLink(BaseModel):
     lightLogo: str
 
 
+def _refuse_null(v: Any) -> Any:
+    """Refuses an explicit null. The API refuses null for these keys, and
+    dropping it would keep the stored value without telling the author."""
+    if v is None:
+        raise ValueError("null is not allowed; leave the key out instead")
+    return v
+
+
 class CertificateCriteria(BaseModel):
     """When a learner earns the certificate: a completion percentage or a
     points total, both of which the qBraid API accepts as `value >= 0`.
@@ -83,6 +91,11 @@ class CertificateSettings(BaseModel):
     enabled: bool = Field(..., strict=True)
     criteria: Optional[CertificateCriteria] = None
     templateId: Optional[Literal["qbraid", "quera", "qct"]] = None
+
+    @field_validator("criteria", "templateId", mode="before")
+    @classmethod
+    def refuse_null(cls, v: Any) -> Any:
+        return _refuse_null(v)
 
 
 class Section(BaseModel):
@@ -155,6 +168,11 @@ class Course(BaseModel):
     # Optional certificate settings, including the template. The API rejects
     # an explicit null here, so `to_payload` drops the key when absent.
     certificateSettings: Optional[CertificateSettings] = None
+
+    @field_validator("certificateSettings", mode="before")
+    @classmethod
+    def refuse_null_certificate_settings(cls, v: Any) -> Any:
+        return _refuse_null(v)
 
     def to_payload(self) -> Dict[str, Any]:
         """The deploy payload the API receives.

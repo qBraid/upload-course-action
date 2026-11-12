@@ -277,6 +277,28 @@ class TestCourseValidator:
             Course(**self._duration_course_data(certificateSettings=bad_settings))
 
     @pytest.mark.parametrize(
+        "extra, bad_loc",
+        [
+            ({"certificateSettings": None}, ("certificateSettings",)),
+            (
+                {"certificateSettings": {"enabled": True, "templateId": None}},
+                ("certificateSettings", "templateId"),
+            ),
+            (
+                {"certificateSettings": {"enabled": True, "criteria": None}},
+                ("certificateSettings", "criteria"),
+            ),
+        ],
+    )
+    def test_explicit_null_fails_and_names_the_key(self, extra, bad_loc):
+        """The API refuses null for these keys. Dropping it instead would keep
+        the stored value without telling the author."""
+        with pytest.raises(ValidationError) as exc_info:
+            Course(**self._duration_course_data(**extra))
+
+        assert [error["loc"] for error in exc_info.value.errors()] == [bad_loc]
+
+    @pytest.mark.parametrize(
         "bad_settings, bad_loc",
         [
             (
