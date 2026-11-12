@@ -63,7 +63,14 @@ class TestCourseValidator:
         mock_stat.return_value.st_size = 100
 
         validator = CourseValidator("course.json")
-        validator.validate()
+        with mock.patch("json.dump", wraps=json.dump) as mock_dump:
+            validator.validate()
+
+        # The dumped payload is what the API receives. An absent
+        # certificateSettings must be left out: the API refuses null.
+        payload = mock_dump.call_args.args[0]
+        assert payload["courseName"] == "Test Course"
+        assert "certificateSettings" not in payload
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("json.load")
@@ -190,7 +197,7 @@ class TestCourseValidator:
         """A declared durationWeeks must survive into the deploy payload."""
         course = Course(**self._duration_course_data(durationWeeks=2))
 
-        payload = course.model_dump(mode="json")
+        payload = course.to_payload()
 
         assert payload["durationWeeks"] == 2
 
@@ -199,7 +206,7 @@ class TestCourseValidator:
         qBraid API treats the same as an absent field."""
         course = Course(**self._duration_course_data())
 
-        payload = course.model_dump(mode="json")
+        payload = course.to_payload()
 
         assert payload["durationWeeks"] is None
 
@@ -207,6 +214,132 @@ class TestCourseValidator:
     def test_out_of_range_duration_weeks_fails_validation(self, bad_value):
         with pytest.raises(ValidationError):
             Course(**self._duration_course_data(durationWeeks=bad_value))
+
+    def test_certificate_settings_with_template_are_forwarded(self):
+        """An author can pick the certificate design in course.json."""
+        course = Course(
+            **self._duration_course_data(
+                certificateSettings={
+                    "enabled": True,
+                    "criteria": {"type": "completion", "value": 80},
+                    "templateId": "qct",
+                }
+            )
+        )
+
+        payload = course.to_payload()
+
+        assert payload["certificateSettings"] == {
+            "enabled": True,
+            "criteria": {"type": "completion", "value": 80.0},
+            "templateId": "qct",
+        }
+
+    def test_absent_certificate_settings_are_omitted_not_null(self):
+        """The API refuses certificateSettings: null, so the key must go."""
+        course = Course(**self._duration_course_data())
+
+        payload = course.to_payload()
+
+        assert "certificateSettings" not in payload
+        # durationWeeks keeps its documented null.
+        assert payload["durationWeeks"] is None
+
+    def test_certificate_settings_without_criteria_omit_the_nested_key(self):
+        course = Course(
+            **self._duration_course_data(
+                certificateSettings={"enabled": False, "templateId": "quera"}
+            )
+        )
+
+        assert course.to_payload()["certificateSettings"] == {
+            "enabled": False,
+            "templateId": "quera",
+        }
+
+    @pytest.mark.parametrize(
+        "bad_settings",
+        [
+            {"enabled": True, "templateId": "QCT"},
+            {"enabled": True, "templateId": "thailand"},
+            {"templateId": "qct"},
+            {"enabled": "yes"},
+            {"enabled": True, "criteria": {"type": "grade", "value": 1}},
+            {"enabled": True, "criteria": {"type": "points", "value": -1}},
+            {"enabled": True, "criteria": {"type": "completion", "value": "80"}},
+            {"enabled": True, "criteria": {"type": "completion", "value": True}},
+            {"enabled": True, "criteria": {"type": "points", "value": float("inf")}},
+            {"enabled": True, "criteria": {"type": "points", "value": float("nan")}},
+            {"enabled": True, "criteria": {"type": "completion", "value": 100.5}},
+        ],
+    )
+    def test_bad_certificate_settings_fail_validation(self, bad_settings):
+        with pytest.raises(ValidationError):
+            Course(**self._duration_course_data(certificateSettings=bad_settings))
+
+    @pytest.mark.parametrize(
+        "criteria",
+        [{"type": "completion", "value": 100}, {"type": "points", "value": 250}],
+    )
+    def test_criteria_at_the_limits_pass(self, criteria):
+        """Completion is capped at 100%; a points total has no upper bound."""
+        course = Course(
+            **self._duration_course_data(
+                certificateSettings={"enabled": True, "criteria": criteria}
+            )
+        )
+
+        assert course.to_payload()["certificateSettings"]["criteria"] == criteria
+
+    @pytest.mark.parametrize(
+        "extra, bad_loc",
+        [
+            ({"certificateSettings": None}, ("certificateSettings",)),
+            (
+                {"certificateSettings": {"enabled": True, "templateId": None}},
+                ("certificateSettings", "templateId"),
+            ),
+            (
+                {"certificateSettings": {"enabled": True, "criteria": None}},
+                ("certificateSettings", "criteria"),
+            ),
+        ],
+    )
+    def test_explicit_null_fails_and_names_the_key(self, extra, bad_loc):
+        """The API refuses null for these keys. Dropping it instead would keep
+        the stored value without telling the author."""
+        with pytest.raises(ValidationError) as exc_info:
+            Course(**self._duration_course_data(**extra))
+
+        assert [error["loc"] for error in exc_info.value.errors()] == [bad_loc]
+
+    @pytest.mark.parametrize(
+        "bad_settings, bad_loc",
+        [
+            (
+                {"enabled": True, "templateID": "qct"},
+                ("certificateSettings", "templateID"),
+            ),
+            (
+                {
+                    "enabled": True,
+                    "criteria": {"type": "completion", "value": 80, "threshold": 90},
+                },
+                ("certificateSettings", "criteria", "threshold"),
+            ),
+        ],
+    )
+    def test_unknown_certificate_keys_fail_and_name_the_key(
+        self, bad_settings, bad_loc
+    ):
+        """A misspelled key is refused, not silently dropped, and the error
+        location names it so the author can find the typo."""
+        with pytest.raises(ValidationError) as exc_info:
+            Course(**self._duration_course_data(certificateSettings=bad_settings))
+
+        errors = exc_info.value.errors()
+        assert [error["loc"] for error in errors] == [bad_loc]
+        assert errors[0]["type"] == "extra_forbidden"
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("json.load")
