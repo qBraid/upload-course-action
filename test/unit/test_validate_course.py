@@ -65,6 +65,13 @@ class TestCourseValidator:
         validator = CourseValidator("course.json")
         validator.validate()
 
+        # The written payload is what the API receives. An absent
+        # certificateSettings must be left out: the API refuses null.
+        written = "".join(c.args[0] for c in mock_file().write.call_args_list)
+        payload = json.loads(written)
+        assert payload["courseName"] == "Test Course"
+        assert "certificateSettings" not in payload
+
     @mock.patch("builtins.open", new_callable=mock.mock_open)
     @mock.patch("json.load")
     @mock.patch("validate_course.Path.exists")
@@ -190,7 +197,7 @@ class TestCourseValidator:
         """A declared durationWeeks must survive into the deploy payload."""
         course = Course(**self._duration_course_data(durationWeeks=2))
 
-        payload = course.model_dump(mode="json")
+        payload = course.to_payload()
 
         assert payload["durationWeeks"] == 2
 
@@ -199,7 +206,7 @@ class TestCourseValidator:
         qBraid API treats the same as an absent field."""
         course = Course(**self._duration_course_data())
 
-        payload = course.model_dump(mode="json")
+        payload = course.to_payload()
 
         assert payload["durationWeeks"] is None
 
