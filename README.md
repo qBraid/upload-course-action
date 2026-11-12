@@ -118,7 +118,9 @@ Partner designs (`quera`, `qct`) need a grant on your course's organization, whi
 
 - **No `certificateSettings` object**: nothing is sent, and the course keeps whatever certificate settings it already has.
 - **No `templateId`**: an existing course keeps its stored design. A new course gets `quera` only if it deploys to `quera.com` and its organization holds the `quera` grant. Every other new course gets `qbraid`.
-- **No `criteria`**: the course's criteria reset to 100% completion, even if an admin set different criteria in qBook. If you include `certificateSettings`, include `criteria` too.
+- **No `criteria`**: an existing course keeps its stored criteria. A new course gets 100% completion.
+
+A field you do send replaces the stored value on every deploy. If an admin later changes that value in qBook, the next deploy writes the `course.json` value back.
 
 Changing the design only affects certificates that have not been delivered yet. Certificates already sent keep their design.
 
