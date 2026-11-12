@@ -8,7 +8,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Set
 
 from common import Config, setup_logging
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 logger = setup_logging(__name__)
 
@@ -70,6 +77,14 @@ class CertificateCriteria(BaseModel):
 
     type: Literal["completion", "points"]
     value: float = Field(..., ge=0, strict=True, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def completion_is_a_percentage(self) -> "CertificateCriteria":
+        # The API accepts any value >= 0, but no learner completes more than
+        # 100% of a course, so a larger completion value issues nothing.
+        if self.type == "completion" and self.value > 100:
+            raise ValueError("a completion value is a percentage, at most 100")
+        return self
 
 
 class CertificateSettings(BaseModel):

@@ -270,11 +270,26 @@ class TestCourseValidator:
             {"enabled": True, "criteria": {"type": "completion", "value": True}},
             {"enabled": True, "criteria": {"type": "points", "value": float("inf")}},
             {"enabled": True, "criteria": {"type": "points", "value": float("nan")}},
+            {"enabled": True, "criteria": {"type": "completion", "value": 100.5}},
         ],
     )
     def test_bad_certificate_settings_fail_validation(self, bad_settings):
         with pytest.raises(ValidationError):
             Course(**self._duration_course_data(certificateSettings=bad_settings))
+
+    @pytest.mark.parametrize(
+        "criteria",
+        [{"type": "completion", "value": 100}, {"type": "points", "value": 250}],
+    )
+    def test_criteria_at_the_limits_pass(self, criteria):
+        """Completion is capped at 100%; a points total has no upper bound."""
+        course = Course(
+            **self._duration_course_data(
+                certificateSettings={"enabled": True, "criteria": criteria}
+            )
+        )
+
+        assert course.to_payload()["certificateSettings"]["criteria"] == criteria
 
     @pytest.mark.parametrize(
         "extra, bad_loc",

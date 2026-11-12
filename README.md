@@ -99,7 +99,7 @@ A `course.json` can turn on certificates and pick their design with an optional 
 | :--- | :--- | :--- |
 | `enabled` | **Yes** | `true` or `false` |
 | `criteria.type` | No | `completion` (percent of the course completed) or `points` (points earned) |
-| `criteria.value` | No | A number `>= 0`: a percentage for `completion`, a point total for `points` |
+| `criteria.value` | No | A number `>= 0`: a percentage up to `100` for `completion`, a point total for `points` |
 | `templateId` | No | One of the template ids below |
 
 ### Certificate templates
